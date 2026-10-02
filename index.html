@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queen of Art | Online Graphic Design & Canva Courses</title>
+<meta name="description" content="Master graphic design and Canva with Queen of Art's online courses. Learn design skills, land freelance clients, and grow your creative career.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --violet:#3B1C78; --violet-dark:#24104D; --lilac:#EEE6FF; --marigold:#FFC93C;
+  --rose:#FF5C8A; --ink:#1E1433; --white:#fff;
+  --head:'Bricolage Grotesque','Trebuchet MS',sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--ink);background:var(--white);line-height:1.6;font-size:17px}
+img{max-width:100%}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 22px}
+h1,h2,h3{font-family:var(--head);line-height:1.1;letter-spacing:-.02em}
+h2{font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:12px}
+section{padding:80px 0}
+.lead{max-width:62ch;margin-bottom:36px;font-size:1.05rem}
+.btn{display:inline-block;padding:13px 26px;border-radius:999px;background:var(--marigold);color:var(--violet-dark);font-weight:700;text-decoration:none;border:2px solid var(--marigold);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:inherit;border-color:currentColor}
+
+/* header */
+header{background:var(--violet-dark);color:var(--white);position:sticky;top:0;z-index:10}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 22px;max-width:1100px;margin:0 auto;flex-wrap:wrap}
+.logo{font-family:var(--head);font-weight:800;font-size:1.3rem;text-decoration:none}
+nav{display:flex;gap:22px;flex-wrap:wrap}
+nav a{text-decoration:none;font-weight:500;font-size:.95rem}
+nav a:hover{color:var(--marigold)}
+
+/* hero */
+.hero{background:var(--violet);color:var(--white);padding:90px 0 100px;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
+.hero h1{font-size:clamp(2.6rem,7vw,4.8rem);font-weight:800;margin-bottom:20px}
+.hero p{max-width:50ch;margin-bottom:28px;color:#E5DAFF}
+.hero .btns{display:flex;gap:14px;flex-wrap:wrap}
+.swatches{position:relative;height:340px}
+.sw{position:absolute;border-radius:28px;display:flex;align-items:flex-end;padding:16px;font-family:var(--head);font-weight:800;font-size:1.1rem;color:var(--ink);box-shadow:0 18px 40px rgba(0,0,0,.28)}
+.sw.a{width:200px;height:240px;background:var(--marigold);left:6%;top:10px;transform:rotate(-8deg)}
+.sw.b{width:190px;height:230px;background:var(--rose);left:34%;top:60px;transform:rotate(5deg)}
+.sw.c{width:180px;height:210px;background:var(--lilac);left:58%;top:0;transform:rotate(12deg)}
+
+/* modules */
+.modules{background:var(--lilac)}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+.mod{background:var(--white);border-radius:22px;padding:26px;display:flex;flex-direction:column;border-top:8px solid var(--violet)}
+.mod:nth-child(2){border-color:var(--rose)}
+.mod:nth-child(3){border-color:var(--marigold)}
+.mod:nth-child(4){border-color:var(--ink)}
+.mod .m{font-weight:700;font-size:.9rem;color:#6a5a8c;margin-bottom:6px}
+.mod h3{font-size:1.4rem;margin-bottom:12px}
+.mod ul{padding-left:18px;margin-bottom:20px;flex:1}
+.mod li{margin-bottom:6px}
+.mod a{font-weight:700;color:var(--violet)}
+
+/* why */
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
+.why div{border-left:6px solid var(--rose);padding-left:16px}
+.why h3{font-size:1.2rem;margin-bottom:4px}
+
+/* pricing */
+.pricing{background:var(--violet-dark);color:var(--white)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+.plan{background:var(--white);color:var(--ink);border-radius:24px;padding:30px;display:flex;flex-direction:column}
+.plan.best{background:var(--marigold)}
+.plan h3{font-size:1.4rem}
+.price{font-family:var(--head);font-size:2.8rem;font-weight:800;margin:8px 0 2px}
+.price small{font-size:1rem;font-weight:500;font-family:var(--body)}
+.plan ul{list-style:none;margin:18px 0;flex:1}
+.plan li{padding:6px 0 6px 26px;position:relative}
+.plan li::before{content:"\2713";position:absolute;left:0;font-weight:700;color:var(--violet)}
+.plan .for{font-size:.93rem;margin-bottom:18px}
+.plan .btn{text-align:center;background:var(--violet);border-color:var(--violet);color:var(--white)}
+.plan.best .btn{background:var(--violet-dark);border-color:var(--violet-dark)}
+
+/* mentors */
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px}
+.person .pic{width:96px;height:96px;border-radius:50%;background:var(--violet);color:var(--marigold);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2rem;margin-bottom:14px}
+.person:nth-child(2) .pic{background:var(--rose);color:var(--white)}
+.person:nth-child(3) .pic{background:var(--marigold);color:var(--violet-dark)}
+.person h3{font-size:1.3rem}
+.person .role{color:#6a5a8c;font-weight:700;margin-bottom:8px}
+
+/* tools + contact + footer */
+.tools{background:var(--lilac)}
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.chips span{background:var(--white);padding:10px 20px;border-radius:999px;font-weight:700}
+.contact{text-align:center}
+.contact p{margin:0 auto 26px}
+footer{background:var(--ink);color:#cfc6e6;padding:40px 0;font-size:.93rem}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer a{text-decoration:none;margin-right:16px}
+footer a:hover{color:var(--marigold)}
+
+@media(max-width:800px){
+  .hero .wrap{grid-template-columns:1fr}
+  .swatches{height:280px}
+  section{padding:60px 0}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="logo" href="#top">Queen of Art</a>
+    <nav aria-label="Main">
+      <a href="#courses">Courses</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#mentors">Mentors</a>
+      <a href="#tools">Tools</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Learn design. Earn from it.</h1>
+      <p>Queen of Art is an online learning hub for creatives who want to turn their skills into income. Graphic design and Canva courses for beginners, plus practical help with landing your first client and writing a resume that gets noticed.</p>
+      <div class="btns">
+        <a class="btn" href="#courses">See the courses</a>
+        <a class="btn ghost" href="#pricing">View pricing</a>
+      </div>
+    </div>
+    <div class="swatches" aria-hidden="true">
+      <div class="sw a">Color</div>
+      <div class="sw b">Type</div>
+      <div class="sw c">Layout</div>
+    </div>
+  </div>
+</div>
+
+<section class="modules" id="courses">
+  <div class="wrap">
+    <h2>Canva Design Basics: weekly learning plan</h2>
+    <p class="lead">A step-by-step path for beginners, freelancers, content creators, and small business owners. No expensive software and no design degree needed.</p>
+    <div class="grid4">
+      <article class="mod">
+        <div class="m">Module 01</div>
+        <h3>Getting started</h3>
+        <ul><li>Intro to the Canva dashboard</li><li>How to use templates</li><li>Saving and exporting designs</li></ul>
+        <a href="#contact">Enroll now</a>
+      </article>
+      <article class="mod">
+        <div class="m">Module 02</div>
+        <h3>Design fundamentals</h3>
+        <ul><li>Color theory and choosing palettes</li><li>Typography basics and font pairing</li><li>Layout, spacing, and visual hierarchy</li></ul>
+        <a href="#contact">Enroll now</a>
+      </article>
+      <article class="mod">
+        <div class="m">Module 03</div>
+        <h3>Branding &amp; templates</h3>
+        <ul><li>Setting up a brand kit (logo, colors, fonts)</li><li>Creating reusable custom templates</li><li>Keeping designs consistent across projects</li></ul>
+        <a href="#contact">Enroll now</a>
+      </article>
+      <article class="mod">
+        <div class="m">Module 04</div>
+        <h3>Real-world projects</h3>
+        <ul><li>Designing social media posts and stories</li><li>Resizing one design for multiple platforms</li><li>Preparing a small portfolio piece to show clients</li></ul>
+        <a href="#contact">Enroll now</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Why learn with Queen of Art</h2>
+    <p class="lead">Start with one module or go all the way. Every course comes with a free certificate.</p>
+    <div class="why">
+      <div><h3>Learn anywhere</h3><p>100% online and self-paced, so you study when it suits you.</p></div>
+      <div><h3>Free certificate</h3><p>Earn a certificate for every course you complete.</p></div>
+      <div><h3>Beginner-friendly</h3><p>No design experience required.</p></div>
+      <div><h3>Practical skills</h3><p>Real templates, real projects, real results.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <h2>Course pricing</h2>
+    <p class="lead">Learn at your own pace. Pick the plan that fits your goals and budget.</p>
+    <div class="plans">
+      <div class="plan">
+        <h3>Per module</h3>
+        <div class="price">₱99 <small>/ module</small></div>
+        <ul><li>Instant download access</li><li>Lifetime access to that module</li><li>Free certificate of completion</li></ul>
+        <p class="for">Best for beginners who want to try one topic first.</p>
+        <a class="btn" href="#contact">Start now</a>
+      </div>
+      <div class="plan best">
+        <h3>Course bundle</h3>
+        <div class="price">₱399 <small>/ full course</small></div>
+        <ul><li>5 to 6 modules bundled</li><li>Save about 20 to 30% vs. buying separately</li><li>Free certificate included</li></ul>
+        <p class="for">Best for learners who want a complete skill path.</p>
+        <a class="btn" href="#contact">Start now</a>
+      </div>
+      <div class="plan">
+        <h3>Expert</h3>
+        <div class="price">₱899 <small>/ month</small></div>
+        <p>or ₱2,999 one-time (launch offer)</p>
+        <ul><li>Unlimited access to all current and future modules</li><li>Priority certificate processing</li><li>Live Q&amp;A and coaching sessions with the team</li></ul>
+        <p class="for">Best for serious learners who want mentorship.</p>
+        <a class="btn" href="#contact">Start now</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="mentors">
+  <div class="wrap">
+    <h2>Meet our mentors</h2>
+    <p class="lead">Dedicated mentors nurturing every artist.</p>
+    <div class="team">
+      <div class="person">
+        <div class="pic" aria-hidden="true">M</div>
+        <h3>Coach Mira</h3><div class="role">Founder &amp; Creative Director</div>
+        <p>Founder of Queen of Art. Meet Coach Mira — founder of Queen of Art and your go-to guide for breaking into graphic design. Through hands-on e-learning in Canva and other design tools, Mira teaches you how to create stunning visuals with confidence, even if you're starting from scratch. Beyond design skills, she shares real strategies on how to land clients and turn your creativity into a thriving freelance business. Whether you're learning your first design tool or pitching your first client, Coach Mira is here to guide you every step of the way..</p>
+      </div>
+      <div class="person">
+        <div class="pic" aria-hidden="true">S</div>
+        <h3>Coach Sarah</h3><div class="role">Co-Founder, SEO Content &amp; Lead Designer</div>
+        <p>Meet Coach Sarah — helping brands grow with strategic SEO content and stunning graphic design. From SEO-optimized copy that drives traffic to eye-catching visuals that make your brand unforgettable, Sarah brings both strategy and creativity to every project. Whether you need content that ranks or design that resonates, she's here to help your business stand out and grow online.</p>
+      </div>
+      <div class="person">
+        <div class="pic" aria-hidden="true">Z</div>
+        <h3>Consultant Zen</h3><div class="role">Legal Consultant</div>
+        <p>Meet Zen The — the go-to consultant at Queen of Art for the legal side of design. While she may not be the one sketching logos or building brand boards, she's the expert behind the scenes making sure designers are protected — covering copyright, contracts, and copywriting essentials that every creative needs to know. From licensing your work correctly to writing agreements that protect your business, Coach The helps designers navigate the legal landscape with confidence, so you</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tools" id="tools">
+  <div class="wrap">
+    <h2>Tools you'll master</h2>
+    <p class="lead">Learn the exact apps clients and employers expect you to know. Learn it here, use it everywhere.</p>
+    <div class="chips"><span>Canva</span><span>Photoshop</span><span>Word</span><span>Excel</span><span>PDF</span></div>
+  </div>
+</section>
+
+<section class="contact" id="contact">
+  <div class="wrap">
+    <h2>Ready to start designing?</h2>
+    <p class="lead">Message us to enroll. Register now and get your first certificate free.</p>
+    <a class="btn" href="mailto:hello@yourdomain.com?subject=Enroll%20in%20Queen%20of%20Art">Email us to enroll</a>
+    <p style="margin-top:20px">Or call <a href="tel:+639774673966">+63 977 4673 966</a></p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Queen of Art Online Learning Courses</div>
+    <div>
+      <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">TikTok</a><a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
