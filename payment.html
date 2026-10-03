@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payment Terms | Queen of Art</title>
+<meta name="description" content="How to pay for Queen of Art courses using bank transfer, Maya, MariBank, or GCash.">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--violet:#3B1C78;--dark:#24104D;--lilac:#EEE6FF;--gold:#FFC93C;--rose:#FF5C8A;--ink:#1E1433}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);line-height:1.65;font-size:17px;background:#fff}
+a{color:var(--violet)}
+header{background:var(--dark);color:#fff}
+.bar{max-width:1000px;margin:0 auto;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.bar a{color:#fff;text-decoration:none;font-weight:500}
+.bar a:hover{color:var(--gold)}
+.logo{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-weight:800;font-size:1.3rem}
+.wrap{max-width:1000px;margin:0 auto;padding:0 22px}
+.hero{background:var(--violet);color:#fff;padding:54px 0}
+h1,h2,h3{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;line-height:1.15;letter-spacing:-.02em}
+h1{font-size:clamp(2.2rem,6vw,3.4rem)}
+h2{font-size:1.8rem;color:var(--violet);margin-bottom:12px}
+section{padding:54px 0}
+.lead{max-width:62ch;margin-bottom:26px}
+.hero .lead{margin:12px 0 0;color:#E5DAFF}
+
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.plan{background:var(--lilac);border-radius:18px;padding:20px 22px;border-top:8px solid var(--violet)}
+.plan:nth-child(2){border-color:var(--gold)}
+.plan:nth-child(3){border-color:var(--rose)}
+.plan b{display:block;font-size:1.05rem}
+.plan .amt{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-weight:800;font-size:1.9rem;color:var(--violet)}
+.plan small{display:block;color:#5d4f7e}
+
+/* methods */
+.methods{background:var(--lilac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.method{background:#fff;border-radius:22px;padding:26px;border-left:10px solid var(--violet)}
+.method.maya{border-color:#17C964}
+.method.mari{border-color:var(--rose)}
+.method.gcash{border-color:#1E6BFF}
+.method h3{font-size:1.4rem;margin-bottom:12px}
+.method dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin-bottom:14px}
+.method dt{font-weight:700;color:#5d4f7e}
+.method dd{word-break:break-word}
+.fill{background:#FFF3C4;padding:1px 6px;border-radius:6px}
+.copy{border:2px solid var(--violet);background:transparent;color:var(--violet);font:inherit;font-weight:700;padding:7px 16px;border-radius:999px;cursor:pointer}
+.copy:hover{background:var(--violet);color:#fff}
+
+/* steps and terms */
+.steps{list-style:none;counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.steps li{counter-increment:s;background:var(--lilac);border-radius:18px;padding:20px 22px 20px 22px}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--violet);color:var(--gold);font-weight:700;margin-bottom:10px}
+.steps b{display:block;margin-bottom:4px}
+.terms ul{margin-left:22px}
+.terms li{margin-bottom:10px}
+.warn{background:#FFF3C4;border-left:8px solid var(--gold);padding:16px 20px;border-radius:14px;margin-top:24px}
+.cta{display:inline-block;margin-top:18px;padding:13px 26px;border-radius:999px;background:var(--gold);color:var(--dark);font-weight:700;text-decoration:none}
+footer{background:var(--ink);color:#cfc6e6;padding:30px 0;font-size:.93rem}
+footer a{color:#cfc6e6;margin-right:14px}
+:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="logo" href="index.html">Queen of Art</a>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <a href="index.html#pricing">Pricing</a>
+      <a href="profile.html">My profile</a>
+      <a href="privacy.html">Privacy Policy</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Payment Terms</h1>
+    <p class="lead">Pay for your course using bank transfer, Maya, MariBank, or GCash. All prices are in Philippine pesos (₱).</p>
+  </div>
+</div>
+
+<main>
+  <section>
+    <div class="wrap">
+      <h2>What you can pay for</h2>
+      <p class="lead">Choose one plan, then pay the exact amount using any method below.</p>
+      <div class="plans">
+        <div class="plan"><b>Per module</b><span class="amt">₱99</span><small>per module</small></div>
+        <div class="plan"><b>Course bundle</b><span class="amt">₱399</span><small>per full course (5 to 6 modules)</small></div>
+        <div class="plan"><b>Expert</b><span class="amt">₱899</span><small>per month, or ₱2,999 one-time (launch offer)</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="methods">
+    <div class="wrap">
+      <h2>Where to send your payment</h2>
+      <p class="lead">Send the exact amount to one of these accounts. Check the account name before you confirm.</p>
+      <div class="grid">
+
+        <article class="method">
+          <h3>Bank transfer</h3>
+          <dl>
+            <dt>Bank</dt><dd><span class="fill">[Your bank name]</span></dd>
+            <dt>Account name</dt><dd><span class="fill">[Your full account name]</span></dd>
+            <dt>Account number</dt><dd id="bankNo"><span class="fill">[Your account number]</span></dd>
+          </dl>
+          <button class="copy" type="button" data-target="bankNo">Copy account number</button>
+        </article>
+
+        <article class="method maya">
+          <h3>Maya</h3>
+          <dl>
+            <dt>Account name</dt><dd><span class="fill">[Your full account name]</span></dd>
+            <dt>Mobile number</dt><dd id="mayaNo"><span class="fill">[Your Maya number]</span></dd>
+          </dl>
+          <button class="copy" type="button" data-target="mayaNo">Copy number</button>
+        </article>
+
+        <article class="method mari">
+          <h3>MariBank</h3>
+          <dl>
+            <dt>Account name</dt><dd><span class="fill">[Your full account name]</span></dd>
+            <dt>Account number</dt><dd id="mariNo"><span class="fill">[Your MariBank account number]</span></dd>
+          </dl>
+          <button class="copy" type="button" data-target="mariNo">Copy account number</button>
+        </article>
+
+        <article class="method gcash">
+          <h3>GCash</h3>
+          <dl>
+            <dt>Account name</dt><dd><span class="fill">[Your full account name]</span></dd>
+            <dt>Mobile number</dt><dd id="gcashNo"><span class="fill">[Your GCash number]</span></dd>
+          </dl>
+          <button class="copy" type="button" data-target="gcashNo">Copy number</button>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>How to pay</h2>
+      <ol class="steps">
+        <li><b>Pick your plan</b>Decide which plan or module you want from the Pricing section.</li>
+        <li><b>Send the payment</b>Pay the exact amount to one of the accounts above.</li>
+        <li><b>Send your proof</b>Email or message us a screenshot of the receipt, your full name, the email you registered with, and the plan you paid for.</li>
+        <li><b>Get your access</b>We confirm your payment and update the Courses Taken and Payment Terms in your profile.</li>
+      </ol>
+      <p style="margin-top:22px">Send your proof of payment to <a href="mailto:mira.graphicsfreelancer@gmail.com">mira.graphicsfreelancer@gmail.com</a> or message us at <a href="tel:+639774673966">+63 977 4673 966</a>.</p>
+      <a class="cta" href="mailto:mira.graphicsfreelancer@gmail.com?subject=Proof%20of%20payment%20-%20Queen%20of%20Art">Email my proof of payment</a>
+    </div>
+  </section>
+
+  <section class="terms" style="background:var(--lilac)">
+    <div class="wrap">
+      <h2>Terms</h2>
+      <ul>
+        <li>Payments are accepted only through bank transfer, Maya, MariBank, and GCash, and only to the account names shown on this page.</li>
+        <li>Please pay the exact amount. Include your registered email or full name in the payment notes if the app allows it.</li>
+        <li>Any transfer fees charged by your bank or e-wallet are paid by the student.</li>
+        <li>Access is updated after we confirm your payment, usually within <span class="fill">[1 business day]</span>.</li>
+        <li>The Expert plan is paid monthly, so please renew before the end of each month to keep your access.</li>
+        <li>Because lessons are digital, payments are generally non-refundable once access is given. If you paid twice or sent the wrong amount, contact us and we will fix it.</li>
+        <li>Your payment details and receipts are used only to confirm your enrollment, as described in our <a href="privacy.html">Privacy Policy</a>.</li>
+      </ul>
+      <div class="warn"><strong>Stay safe.</strong> We never ask for your card number, PIN, password, or one-time code (OTP). Only pay to the accounts shown on this page.</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="index.html">Home</a><a href="profile.html">My profile</a><a href="privacy.html">Privacy Policy</a></div>
+</footer>
+
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var text = document.getElementById(btn.dataset.target).textContent.trim();
+    var old = btn.textContent;
+    function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = old; }, 1600); }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+  });
+});
+</script>
+</body>
+</html>
