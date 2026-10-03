@@ -90,7 +90,9 @@ nav a:hover{color:var(--marigold)}
 .person:nth-child(3) .pic{background:var(--marigold);color:var(--violet-dark)}
 .person h3{font-size:1.3rem}
 .person .role{color:#6a5a8c;font-weight:700;margin-bottom:8px}
-
+.person .pic{position:relative;overflow:hidden}
+.person .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  
 /* tools + contact + footer */
 .tools{background:var(--lilac)}
 .chips{display:flex;flex-wrap:wrap;gap:12px}
@@ -251,19 +253,19 @@ nav{align-items:center}
   <div class="wrap">
     <h2>Meet our mentors</h2>
     <p class="lead">Dedicated mentors nurturing every artist.</p>
-    <div class="team">
+    <div class="pic"><span aria-hidden="true">M</span><img src="mira.jpg" alt="Coach Mira" onerror="this.remove()"></div>
       <div class="person">
         <div class="pic" aria-hidden="true">M</div>
         <h3>Coach Mira</h3><div class="role">Founder &amp; Creative Director</div>
         <p>Founder of Queen of Art. Mira teaches hands-on design in Canva and other tools, and shares real strategies for landing clients and building a freelance business.</p>
       </div>
       <div class="person">
-        <div class="pic" aria-hidden="true">S</div>
+        <div class="pic"><span aria-hidden="true">S</span><img src="sarah.jpg" alt="Coach Sarah" onerror="this.remove()"></div>
         <h3>Coach Sarah</h3><div class="role">Co-Founder, SEO Content &amp; Lead Designer</div>
         <p>Sarah combines SEO-optimized content with eye-catching design to help brands grow and stand out online.</p>
       </div>
       <div class="person">
-        <div class="pic" aria-hidden="true">Z</div>
+        <div class="pic"><span aria-hidden="true">Z</span><img src="zen.jpg" alt="Consultant Zen" onerror="this.remove()"></div>
         <h3>Consultant Zen</h3><div class="role">Legal Consultant</div>
         <p>Zen covers the legal side of design: copyright, contracts, and licensing, so designers can protect their work and their business.</p>
       </div>
