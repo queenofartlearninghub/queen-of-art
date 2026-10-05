@@ -81,6 +81,20 @@
   $('layout').classList.remove('hide');
   let current = null;
 
+  async function downloadFile(l, btn) {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing...';
+    try {
+      const fref = db.collection('catalog').doc(cid).collection('files').doc(l.fileId);
+      const meta = (await fref.get()).data();
+      const parts = await Promise.all(Array.from({ length: meta.chunks }, (_, i) => fref.collection('chunks').doc(String(i)).get()));
+      const blob = new Blob(parts.map(d => d.data().data.toUint8Array()), { type: meta.type || 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = meta.name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+    } catch (e) { $('dlmsg').className = 'msg err'; $('dlmsg').textContent = 'Could not download the file. Make sure you are logged in and enrolled, then try again.'; }
+    btn.disabled = false; btn.textContent = label;
+  }
+
   if (!canView) {
     $('gate').innerHTML = user
       ? 'This course is for enrolled students. Free preview lessons are open below. To unlock everything, follow the steps on the <a href="payment.html">Payment Terms</a> page and send your proof of payment' + (course.price ? ' (' + esc(course.price) + ')' : '') + '. We will unlock the course on your profile.'
@@ -117,9 +131,11 @@
       html += emb ? `<div class="video"><iframe src="${esc(emb)}" allowfullscreen loading="lazy" title="${esc(l.title)}"></iframe></div>` : `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the video</a></p>`;
     }
     if (l.body) html += `<div class="body">${esc(l.body)}</div>`;
+    if (l.type === 'file' && l.fileId) html += `<div class="panel" style="background:var(--lilac);border-color:var(--lilac)"><strong>${esc(l.fileName || 'Course file')}</strong> <span class="muted">(${fmtSize(l.fileSize || 0)})</span><div class="row"><button class="btn alt" id="dlBtn" type="button">Download file</button></div><div id="dlmsg"></div></div>`;
     if (l.type === 'link' && url) html += `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the handout</a></p>`;
     if (enrolled) html += `<div class="row"><button class="btn" id="doneBtn" type="button">${done.includes(id) ? 'Mark as not done' : 'Mark as complete'}</button></div><div id="pmsg"></div>`;
     $('viewer').innerHTML = html;
+    if (l.type === 'file' && l.fileId) $('dlBtn').onclick = () => downloadFile(l, $('dlBtn'));
     if (enrolled) $('doneBtn').onclick = async () => {
       const next = done.includes(id) ? done.filter(x => x !== id) : [...done, id];
       try { await progRef.set({ done: next }); done = next; open(id); } catch (e) { $('pmsg').className = 'msg err'; $('pmsg').textContent = 'Could not save your progress. Try again.'; }
