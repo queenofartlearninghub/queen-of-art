@@ -101,6 +101,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
+  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 const $ = id => document.getElementById(id);
 const say = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
 const DEFAULT_PAY = 'No payment recorded yet';
