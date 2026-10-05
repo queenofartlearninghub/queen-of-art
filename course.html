@@ -141,7 +141,14 @@
       try { await progRef.set({ done: next }); done = next; open(id); } catch (e) { $('pmsg').className = 'msg err'; $('pmsg').textContent = 'Could not save your progress. Try again.'; }
     };
   }
-
+<div id="scrollMessage" class="alert">
+Please read and scroll through the module before taking the quiz.
+</div>
+ 
+<button id="startQuizBtn" disabled>
+Unlock Quiz
+</button>
+  </div>
   drawOutline();
   const first = items.find(i => canView || i.preview);
   if (first) open(first.id);
