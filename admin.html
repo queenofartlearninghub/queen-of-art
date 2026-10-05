@@ -50,8 +50,16 @@
 <script src="app.js"></script>
 <script>
 const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
+const MAX_BYTES = 8 * 1024 * 1024, CHUNK = 800000;
 let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
 
+function fail(what, e) {
+  const code = e && e.code ? ' (' + e.code + ')' : '';
+  const hint = e && e.code === 'permission-denied'
+    ? ' Firestore blocked this. Publish the latest rules, check that the admin email in the rules matches your login, then log out and log in again.'
+    : '';
+  flash(what + code + hint);
+}
 function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
 (async () => {
@@ -81,7 +89,7 @@ async function loadCourses() {
   try {
     const s = await db.collection('catalog').get();
     courses = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
-  } catch (e) { flash('Could not load courses. Check that your Firestore rules are published.'); return; }
+  } catch (e) { fail('Could not load courses. Check that your Firestore rules are published.', e); return; }
   drawCourseList();
 }
 function drawCourseList() {
@@ -120,18 +128,20 @@ async function saveCourse() {
       title, level: $('cLevel').value, summary: $('cSummary').value.trim(), price: $('cPrice').value.trim(),
       order: Number($('cOrder').value) || 1, published: $('cPub').checked
     }, { merge: true });
-    flash('Course saved.', true);
-    await loadCourses(); await selectCourse(id);
-  } catch (e) { flash('Could not save the course. Check your Firestore rules.'); }
+  } catch (e) { return fail('Could not save the course.', e); }
+  flash('Course saved.', true);
+  try { await loadCourses(); await selectCourse(id); } catch (e) { fail('The course was saved, but the page could not refresh.', e); }
 }
 async function deleteCourse() {
-  if (!confirm('Delete this course and all its lessons? This cannot be undone.')) return;
+  if (!confirm('Delete this course, its lessons, and its uploaded files? This cannot be undone.')) return;
   try {
     const ref = db.collection('catalog').doc(cur);
+    const fs = await ref.collection('files').get();
+    for (const f of fs.docs) await deleteFile(cur, f.id);
     const ls = await ref.collection('lessons').get();
     const b = db.batch(); ls.forEach(d => b.delete(d.ref)); b.delete(ref); await b.commit();
     cur = null; flash('Course deleted.', true); await loadCourses(); $('editor').innerHTML = '<div class="note">Select a course on the left, or click New course.</div>';
-  } catch (e) { flash('Could not delete the course.'); }
+  } catch (e) { fail('Could not delete the course.', e); }
 }
 
 /* ---------- Lessons ---------- */
@@ -153,7 +163,14 @@ function renderLessons() {
     <label for="lType">Type</label><select id="lType">
       <option value="text" ${l.type === 'text' ? 'selected' : ''}>Text lesson</option>
       <option value="video" ${l.type === 'video' ? 'selected' : ''}>Video (YouTube or Google Drive link)</option>
-      <option value="link" ${l.type === 'link' ? 'selected' : ''}>Handout or file link (Google Drive, etc.)</option></select>
+      <option value="link" ${l.type === 'link' ? 'selected' : ''}>Handout or file link (Google Drive, etc.)</option>
+      <option value="file" ${l.type === 'file' ? 'selected' : ''}>File (upload from your computer)</option></select>
+    <div id="fileBox" class="${l.type === 'file' ? '' : 'hide'}">
+      <label for="lFile">Upload a file (PDF, Word, PowerPoint, Excel, image, ZIP, or MP3, up to 8 MB)</label>
+      <input type="file" id="lFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">
+      <p class="muted" style="margin-top:6px">${l.fileName ? 'Current file: ' + esc(l.fileName) + ' (' + fmtSize(l.fileSize || 0) + '). Choose a new file to replace it.' : ''}</p>
+      <p class="muted" id="upText"></p>
+    </div>
     <label for="lUrl">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
     <label for="lBody">Lesson text or notes</label><textarea id="lBody" rows="7">${esc(l.body || '')}</textarea>
     <label for="lOrder">Order</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
@@ -165,25 +182,65 @@ function renderLessons() {
   $('lessonsBox').querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editingLesson = b.dataset.e; renderLessons(); window.scrollTo({ top: $('lessonsBox').offsetTop, behavior: 'smooth' }); });
   $('lessonsBox').querySelectorAll('[data-d]').forEach(b => b.onclick = () => deleteLesson(b.dataset.d));
   $('saveL').onclick = saveLesson;
+  $('lType').onchange = () => $('fileBox').classList.toggle('hide', $('lType').value !== 'file');
   if (editingLesson) $('cancelL').onclick = () => { editingLesson = null; renderLessons(); };
 }
+/* ---------- File uploads (stored in Firestore in small pieces) ---------- */
+async function uploadFile(cid, f, onp) {
+  const fid = 'f-' + Date.now().toString(36);
+  const buf = new Uint8Array(await f.arrayBuffer());
+  const n = Math.max(1, Math.ceil(buf.length / CHUNK));
+  const fref = db.collection('catalog').doc(cid).collection('files').doc(fid);
+  try {
+    await fref.set({ name: f.name, size: f.size, type: f.type || 'application/octet-stream', chunks: n, preview: false });
+    for (let i = 0; i < n; i++) {
+      await fref.collection('chunks').doc(String(i)).set({ data: firebase.firestore.Blob.fromUint8Array(buf.slice(i * CHUNK, (i + 1) * CHUNK)) });
+      onp(Math.round(100 * (i + 1) / n));
+    }
+  } catch (e) { try { await deleteFile(cid, fid); } catch (x) {} throw e; }
+  return { fileId: fid, fileName: f.name, fileSize: f.size, fileType: f.type || '' };
+}
+async function deleteFile(cid, fid) {
+  const fref = db.collection('catalog').doc(cid).collection('files').doc(fid);
+  const cs = await fref.collection('chunks').get();
+  const b = db.batch(); cs.forEach(d => b.delete(d.ref)); b.delete(fref); await b.commit();
+}
+
 async function saveLesson() {
   const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
   if (!title) return flash('Enter a lesson title.');
   if ((type === 'video' || type === 'link') && url && !safeUrl(url)) return flash('The link must start with https://');
+  const old = lessonList.find(x => x.id === editingLesson) || {};
+  const f = type === 'file' ? $('lFile').files[0] : null;
+  if (type === 'file' && !f && !old.fileId) return flash('Choose a file to upload.');
+  if (f && f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 8 MB. For videos, upload to YouTube and paste the link instead.');
   const id = editingLesson || ('l-' + Date.now().toString(36));
+  const btn = $('saveL'); btn.disabled = true;
   try {
+    let info = {};
+    if (type === 'file') {
+      if (f) {
+        info = await uploadFile(cur, f, p => { $('upText').textContent = 'Uploading... ' + p + '%'; });
+        if (old.fileId) await deleteFile(cur, old.fileId);
+      } else info = { fileId: old.fileId, fileName: old.fileName, fileSize: old.fileSize, fileType: old.fileType || '' };
+    } else if (old.fileId) await deleteFile(cur, old.fileId);
+    info = Object.fromEntries(Object.entries(info).filter(([, v]) => v !== undefined));
     await db.collection('catalog').doc(cur).collection('lessons').doc(id).set({
       title, type, url, body: $('lBody').value, order: Number($('lOrder').value) || 1,
-      preview: $('lPrev').checked, published: $('lPub').checked
+      preview: $('lPrev').checked, published: $('lPub').checked, ...info
     });
+    if (info.fileId) await db.collection('catalog').doc(cur).collection('files').doc(info.fileId).update({ preview: $('lPrev').checked });
     await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
-  } catch (e) { flash('Could not save the lesson. Check your Firestore rules.'); }
+  } catch (e) { fail('Could not save the lesson.', e); btn.disabled = false; }
 }
 async function deleteLesson(id) {
   if (!confirm('Delete this lesson?')) return;
-  try { await db.collection('catalog').doc(cur).collection('lessons').doc(id).delete(); await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson deleted.', true); }
-  catch (e) { flash('Could not delete the lesson.'); }
+  try {
+    const l = lessonList.find(x => x.id === id) || {};
+    if (l.fileId) await deleteFile(cur, l.fileId);
+    await db.collection('catalog').doc(cur).collection('lessons').doc(id).delete();
+    await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson deleted.', true);
+  } catch (e) { fail('Could not delete the lesson.', e); }
 }
 async function rebuildOutline(cid) {
   const ref = db.collection('catalog').doc(cid);
@@ -200,7 +257,7 @@ async function addSample() {
     for (let i = 0; i < items.length; i++) await ref.collection('lessons').doc('l-' + (i + 1)).set({ title: items[i][0], type: 'text', url: '', body: 'Write your lesson here.', order: i + 1, preview: items[i][1], published: true });
     await rebuildOutline(id); await loadCourses(); await selectCourse(id);
     flash('Sample course added as a draft. Edit the lessons, then tick Published.', true);
-  } catch (e) { flash('Could not add the sample course. Check your Firestore rules.'); }
+  } catch (e) { fail('Could not add the sample course. Check your Firestore rules.', e); }
 }
 
 /* ---------- Students ---------- */
@@ -209,7 +266,7 @@ async function loadStudents() {
     const s = await db.collection('users').get();
     students = s.docs.map(d => ({ uid: d.id, ...d.data() }));
     if (!courses.length) await loadCourses();
-  } catch (e) { flash('Could not load students. Check your Firestore rules.'); return; }
+  } catch (e) { fail('Could not load students. Check your Firestore rules.', e); return; }
   drawStudents();
 }
 function drawStudents() {
@@ -229,7 +286,7 @@ function drawStudents() {
       // keep any older course entries that are not in the catalog
       const old = (students.find(x => x.uid === card.dataset.u).courses || []).filter(c => !courses.some(k => k.id === c));
       try { await db.collection('users').doc(card.dataset.u).update({ courses: [...ids, ...old], payment: card.querySelector('.pay').value.trim() || 'No payment recorded yet' }); flash('Student saved.', true); loadStudents(); }
-      catch (e) { flash('Could not save. Check your Firestore rules.'); }
+      catch (e) { fail('Could not save. Check your Firestore rules.', e); }
     };
   });
 }
