@@ -68,7 +68,7 @@ input:focus{outline:none;border-color:var(--violet)}
     <h2 id="hello" style="font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px"></h2>
    <p id="verifyNote" style="margin-bottom:16px"></p>
 <a class="go" href="index.html#courses" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to the courses</a>
-
+<button class="go" id="logout" type="button">Log out</button>
   </div>
 
   <div id="msg" class="msg" role="status" aria-live="polite"></div>
@@ -95,6 +95,7 @@ const configured = !firebaseConfig.apiKey.startsWith('PASTE');
 if (!configured) msg('Setup needed: add your Firebase settings in register.html before accounts can be created.');
 else firebase.initializeApp(firebaseConfig);
 const auth = configured ? firebase.auth() : null;
+  if (auth) auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
 function friendly(e){
   const c = e.code || '';
