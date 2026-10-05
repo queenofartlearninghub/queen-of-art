@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin | Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top"></header>
+
+<div class="hero2"><div class="wrap"><h1>Admin</h1><p>Create courses and lessons, and unlock courses for students after payment.</p></div></div>
+
+<main class="wrap pad" id="gate"><p class="muted">Checking your access...</p></main>
+
+<main class="wrap pad hide" id="app">
+  <div class="tabs" style="margin-top:0">
+    <button type="button" class="on" id="tabC">Courses</button>
+    <button type="button" id="tabS">Students</button>
+  </div>
+
+  <section id="paneC">
+    <div class="layout">
+      <aside class="side">
+        <h3>Courses</h3>
+        <div id="clist"></div>
+        <div class="row">
+          <button class="btn sm" type="button" id="newC">New course</button>
+          <button class="btn sm line" type="button" id="sample">Add sample course</button>
+        </div>
+      </aside>
+      <div id="editor"><div class="note">Select a course on the left, or click New course.</div></div>
+    </div>
+  </section>
+
+  <section id="paneS" class="hide">
+    <label for="search">Search students</label>
+    <input id="search" placeholder="Type a name or email">
+    <div id="slist" style="margin-top:18px"></div>
+  </section>
+
+  <div id="amsg" class="msg hide"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
+<script>
+const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
+let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
+
+function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
+
+(async () => {
+  renderTopbar();
+  const user = await authReady();
+  if (!isAdminUser(user)) {
+    $('gate').innerHTML = '<div class="note">This page is for the site admin only. <a href="register.html">Log in</a> with the admin email (and make sure the email is verified).</div>';
+    return;
+  }
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+
+  $('tabC').onclick = () => tab('C'); $('tabS').onclick = () => tab('S');
+  $('newC').onclick = () => { cur = null; editingLesson = null; drawCourseList(); renderEditor(null); };
+  $('sample').onclick = addSample;
+  $('search').oninput = drawStudents;
+  await loadCourses();
+})();
+
+function tab(t) {
+  $('paneC').classList.toggle('hide', t !== 'C'); $('paneS').classList.toggle('hide', t !== 'S');
+  $('tabC').classList.toggle('on', t === 'C'); $('tabS').classList.toggle('on', t === 'S');
+  if (t === 'S') loadStudents();
+}
+
+/* ---------- Courses ---------- */
+async function loadCourses() {
+  try {
+    const s = await db.collection('catalog').get();
+    courses = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+  } catch (e) { flash('Could not load courses. Check that your Firestore rules are published.'); return; }
+  drawCourseList();
+}
+function drawCourseList() {
+  $('clist').innerHTML = courses.map(c => `<button type="button" class="item ${c.id === cur ? 'on' : ''}" data-id="${esc(c.id)}">${esc(c.title || c.id)}<small>${c.published ? 'Published' : 'Draft'} - ${esc(c.level || '')}</small></button>`).join('') || '<p class="muted">No courses yet.</p>';
+  $('clist').querySelectorAll('.item').forEach(b => b.onclick = () => selectCourse(b.dataset.id));
+}
+async function selectCourse(id) {
+  cur = id; editingLesson = null; drawCourseList();
+  renderEditor(courses.find(c => c.id === id));
+  await loadLessons();
+}
+function renderEditor(c) {
+  const isNew = !c; c = c || { level: 'Basic', published: false, order: courses.length + 1 };
+  $('editor').innerHTML = `<div class="panel">
+    <h2>${isNew ? 'New course' : 'Edit course'}</h2>
+    <label for="cId">Course ID (small letters, numbers, dashes)</label>
+    <input id="cId" value="${esc(c.id || '')}" ${isNew ? '' : 'disabled'} placeholder="canva-module-1">
+    <label for="cTitle">Title</label><input id="cTitle" value="${esc(c.title || '')}">
+    <label for="cLevel">Level</label><select id="cLevel">${LEVELS.map(l => `<option ${l === c.level ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <label for="cSummary">Short description</label><textarea id="cSummary" rows="3">${esc(c.summary || '')}</textarea>
+    <label for="cPrice">Price shown on the course page</label><input id="cPrice" value="${esc(c.price || '')}" placeholder="₱99">
+    <label for="cOrder">Order in the list</label><input id="cOrder" type="number" value="${esc(c.order || 1)}">
+    <label class="chk"><input id="cPub" type="checkbox" ${c.published ? 'checked' : ''}> Published (visible to students)</label>
+    <div class="row"><button class="btn" type="button" id="saveC">Save course</button>${isNew ? '' : '<button class="btn line" type="button" id="delC">Delete course</button>'}</div>
+  </div><div id="lessonsBox"></div>`;
+  $('saveC').onclick = saveCourse;
+  if (!isNew) $('delC').onclick = deleteCourse;
+}
+async function saveCourse() {
+  const id = $('cId').value.trim();
+  if (!/^[a-z0-9-]{3,60}$/.test(id)) return flash('Course ID must be 3 to 60 characters: small letters, numbers, and dashes only.');
+  const title = $('cTitle').value.trim();
+  if (!title) return flash('Enter a course title.');
+  try {
+    await db.collection('catalog').doc(id).set({
+      title, level: $('cLevel').value, summary: $('cSummary').value.trim(), price: $('cPrice').value.trim(),
+      order: Number($('cOrder').value) || 1, published: $('cPub').checked
+    }, { merge: true });
+    flash('Course saved.', true);
+    await loadCourses(); await selectCourse(id);
+  } catch (e) { flash('Could not save the course. Check your Firestore rules.'); }
+}
+async function deleteCourse() {
+  if (!confirm('Delete this course and all its lessons? This cannot be undone.')) return;
+  try {
+    const ref = db.collection('catalog').doc(cur);
+    const ls = await ref.collection('lessons').get();
+    const b = db.batch(); ls.forEach(d => b.delete(d.ref)); b.delete(ref); await b.commit();
+    cur = null; flash('Course deleted.', true); await loadCourses(); $('editor').innerHTML = '<div class="note">Select a course on the left, or click New course.</div>';
+  } catch (e) { flash('Could not delete the course.'); }
+}
+
+/* ---------- Lessons ---------- */
+async function loadLessons() {
+  const s = await db.collection('catalog').doc(cur).collection('lessons').get();
+  lessonList = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+  renderLessons();
+}
+function renderLessons() {
+  const l = lessonList.find(x => x.id === editingLesson) || { type: 'text', published: true, preview: false, order: lessonList.length + 1 };
+  $('lessonsBox').innerHTML = `<div class="panel">
+    <h2>Lessons</h2>
+    ${lessonList.map(x => `<div class="lrow"><div><strong>${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(x.type)}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
+      <div class="row" style="margin:0"><button class="btn sm line" type="button" data-e="${esc(x.id)}">Edit</button><button class="btn sm line" type="button" data-d="${esc(x.id)}">Delete</button></div></div>`).join('') || '<p class="muted">No lessons yet.</p>'}
+  </div>
+  <div class="panel">
+    <h2>${editingLesson ? 'Edit lesson' : 'Add a lesson'}</h2>
+    <label for="lTitle">Lesson title</label><input id="lTitle" value="${esc(l.title || '')}" placeholder="Module 01: Getting Started with Canva (Reading Handout)">
+    <label for="lType">Type</label><select id="lType">
+      <option value="text" ${l.type === 'text' ? 'selected' : ''}>Text lesson</option>
+      <option value="video" ${l.type === 'video' ? 'selected' : ''}>Video (YouTube or Google Drive link)</option>
+      <option value="link" ${l.type === 'link' ? 'selected' : ''}>Handout or file link (Google Drive, etc.)</option></select>
+    <label for="lUrl">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
+    <label for="lBody">Lesson text or notes</label><textarea id="lBody" rows="7">${esc(l.body || '')}</textarea>
+    <label for="lOrder">Order</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
+    <label class="chk"><input id="lPrev" type="checkbox" ${l.preview ? 'checked' : ''}> Free preview (anyone can open it)</label>
+    <label class="chk"><input id="lPub" type="checkbox" ${l.published ? 'checked' : ''}> Published</label>
+    <p class="muted" style="margin-top:8px;font-size:.9rem">Tip: upload handouts to Google Drive, set sharing to "Anyone with the link", and paste the link above.</p>
+    <div class="row"><button class="btn" type="button" id="saveL">${editingLesson ? 'Save changes' : 'Add lesson'}</button>${editingLesson ? '<button class="btn line" type="button" id="cancelL">Cancel</button>' : ''}</div>
+  </div>`;
+  $('lessonsBox').querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editingLesson = b.dataset.e; renderLessons(); window.scrollTo({ top: $('lessonsBox').offsetTop, behavior: 'smooth' }); });
+  $('lessonsBox').querySelectorAll('[data-d]').forEach(b => b.onclick = () => deleteLesson(b.dataset.d));
+  $('saveL').onclick = saveLesson;
+  if (editingLesson) $('cancelL').onclick = () => { editingLesson = null; renderLessons(); };
+}
+async function saveLesson() {
+  const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
+  if (!title) return flash('Enter a lesson title.');
+  if ((type === 'video' || type === 'link') && url && !safeUrl(url)) return flash('The link must start with https://');
+  const id = editingLesson || ('l-' + Date.now().toString(36));
+  try {
+    await db.collection('catalog').doc(cur).collection('lessons').doc(id).set({
+      title, type, url, body: $('lBody').value, order: Number($('lOrder').value) || 1,
+      preview: $('lPrev').checked, published: $('lPub').checked
+    });
+    await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
+  } catch (e) { flash('Could not save the lesson. Check your Firestore rules.'); }
+}
+async function deleteLesson(id) {
+  if (!confirm('Delete this lesson?')) return;
+  try { await db.collection('catalog').doc(cur).collection('lessons').doc(id).delete(); await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson deleted.', true); }
+  catch (e) { flash('Could not delete the lesson.'); }
+}
+async function rebuildOutline(cid) {
+  const ref = db.collection('catalog').doc(cid);
+  const s = await ref.collection('lessons').get();
+  const outline = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.published).sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview }));
+  await ref.set({ outline }, { merge: true });
+}
+async function addSample() {
+  const id = 'canva-module-1', ref = db.collection('catalog').doc(id);
+  try {
+    await ref.set({ title: 'Module 1: Getting Started with Canva', level: 'Basic', summary: 'Learn the Canva dashboard, how to use templates, and how to save and export your designs.', price: '₱99', order: 1, published: false }, { merge: true });
+    const items = [['Intro to the Canva dashboard', true], ['How to use templates', false], ['Saving and exporting designs', false]];
+    for (let i = 0; i < items.length; i++) await ref.collection('lessons').doc('l-' + (i + 1)).set({ title: items[i][0], type: 'text', url: '', body: 'Write your lesson here.', order: i + 1, preview: items[i][1], published: true });
+    await rebuildOutline(id); await loadCourses(); await selectCourse(id);
+    flash('Sample course added as a draft. Edit the lessons, then tick Published.', true);
+  } catch (e) { flash('Could not add the sample course. Check your Firestore rules.'); }
+}
+
+/* ---------- Students ---------- */
+async function loadStudents() {
+  try {
+    const s = await db.collection('users').get();
+    students = s.docs.map(d => ({ uid: d.id, ...d.data() }));
+    if (!courses.length) await loadCourses();
+  } catch (e) { flash('Could not load students. Check your Firestore rules.'); return; }
+  drawStudents();
+}
+function drawStudents() {
+  const q = $('search').value.trim().toLowerCase();
+  const list = students.filter(s => !q || (s.fullName || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q));
+  $('slist').innerHTML = list.map(s => `<div class="student" data-u="${esc(s.uid)}">
+      <strong>${esc(s.fullName || 'No name yet')}</strong> <span class="muted">${esc(s.email || s.uid)}</span>
+      <label>Courses unlocked</label>
+      <div class="checks">${courses.map(c => `<label class="chk" style="margin:0"><input type="checkbox" value="${esc(c.id)}" ${(s.courses || []).includes(c.id) ? 'checked' : ''}> ${esc(c.title || c.id)}</label>`).join('') || '<span class="muted">Create a course first.</span>'}</div>
+      <label>Payment terms (the student sees this)</label>
+      <input class="pay" value="${esc(s.payment || '')}" placeholder="Per module: ₱99 (Paid)">
+      <div class="row"><button class="btn sm" type="button">Save student</button></div>
+    </div>`).join('') || '<p class="muted">No students found. Students appear here after they open their profile once.</p>';
+  $('slist').querySelectorAll('.student').forEach(card => {
+    card.querySelector('button').onclick = async () => {
+      const ids = Array.from(card.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value);
+      // keep any older course entries that are not in the catalog
+      const old = (students.find(x => x.uid === card.dataset.u).courses || []).filter(c => !courses.some(k => k.id === c));
+      try { await db.collection('users').doc(card.dataset.u).update({ courses: [...ids, ...old], payment: card.querySelector('.pay').value.trim() || 'No payment recorded yet' }); flash('Student saved.', true); loadStudents(); }
+      catch (e) { flash('Could not save. Check your Firestore rules.'); }
+    };
+  });
+}
+</script>
+</body>
+</html>

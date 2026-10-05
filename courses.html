@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Hub | Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top"></header>
+
+<div class="hero2">
+  <div class="wrap">
+    <h1>Learning hub</h1>
+    <p>All Queen of Art courses in one place. Log in to open the courses you have enrolled in.</p>
+  </div>
+</div>
+
+<main class="wrap pad">
+  <div class="chips" id="filters"></div>
+  <div class="cards" id="grid"></div>
+  <p class="note hide" id="empty">No courses are published yet. Please check back soon.</p>
+  <div class="msg err hide" id="err"></div>
+</main>
+
+<footer class="mini"><div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="index.html">Home</a><a href="payment.html">Payment Terms</a><a href="privacy.html">Privacy Policy</a></div></footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  renderTopbar();
+  const user = await authReady();
+  let mine = [];
+  if (user) {
+    try { const s = await db.collection('users').doc(user.uid).get(); mine = (s.data() || {}).courses || []; } catch (e) {}
+  }
+
+  let list = [];
+  try {
+    const snap = await db.collection('catalog').where('published', '==', true).get();
+    snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+  } catch (e) {
+    $('err').textContent = 'Could not load the courses. Please try again later.';
+    $('err').classList.remove('hide');
+    return;
+  }
+  list.sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (!list.length) { $('empty').classList.remove('hide'); return; }
+
+  const levels = ['All', ...Array.from(new Set(list.map(c => c.level).filter(Boolean)))];
+  let level = 'All';
+
+  function draw() {
+    $('filters').innerHTML = levels.map(l => `<button type="button" class="${l === level ? 'on' : ''}" data-l="${esc(l)}">${esc(l)}</button>`).join('');
+    $('filters').querySelectorAll('button').forEach(b => b.onclick = () => { level = b.dataset.l; draw(); });
+    $('grid').innerHTML = list.filter(c => level === 'All' || c.level === level).map(c => {
+      const enrolled = mine.includes(c.id);
+      const lessons = (c.outline || []).length;
+      return `<article class="card">
+        <div><span class="tag">${esc(c.level || 'Course')}</span> ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}</div>
+        <h3>${esc(c.title)}</h3>
+        <p>${esc(c.summary || '')}</p>
+        <div class="muted" style="margin-bottom:10px">${lessons} lesson${lessons === 1 ? '' : 's'}</div>
+        ${c.price && !enrolled ? `<div class="price">${esc(c.price)}</div>` : ''}
+        <a class="btn" href="course.html?id=${encodeURIComponent(c.id)}">${enrolled ? 'Continue learning' : 'View course'}</a>
+      </article>`;
+    }).join('');
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
