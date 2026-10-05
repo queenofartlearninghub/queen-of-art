@@ -1,0 +1,69 @@
+1. What is Canva?
+A. A spreadsheet program
+B. An online design tool for making posts, flyers, and presentations
+C. A video calling app
+D. An antivirus program
+Answer: B
+
+2. Which is the quickest way to start a design from a ready-made layout?
+A. Delete all the elements first
+B. Install a plugin
+C. Choose a template
+D. Print a blank page
+Answer: C
+
+3. Where do you go in Canva to save your design as a PDF or PNG file?
+A. Share, then Download
+B. Home, then Settings
+C. Apps, then Charts
+D. Edit, then Undo
+Answer: A
+
+4. Which file format supports a transparent background?
+A. JPG
+B. MP4
+C. DOCX
+D. PNG
+Answer: D
+
+5. Which format keeps your layout fixed when you send a flyer to a printer?
+A. GIF
+B. PDF
+C. MP3
+D. TXT
+Answer: B
+
+6. Where do you find photos, elements, text, and uploads while you edit a design?
+A. In your browser history
+B. In your phone settings
+C. In the side panel of the editor
+D. In the Windows taskbar
+Answer: C
+
+7. What does the Undo button do?
+A. It reverses your last change
+B. It deletes the design permanently
+C. It shares the design
+D. It changes the language
+Answer: A
+
+8. What happens to your design while you work in Canva?
+A. It is emailed to you every hour
+B. It is deleted when you close the tab
+C. It is printed automatically
+D. It is saved automatically to your account
+Answer: D
+
+9. Why is it helpful to start from a template?
+A. It stops you from editing the text
+B. It saves time and gives you a professional layout you can customize
+C. It removes all your images
+D. It makes the file unreadable
+Answer: B
+
+10. Why should you choose the right design type, such as Instagram Post, at the start?
+A. It changes your password
+B. It adds music to your design
+C. It sets the correct size for that platform
+D. It blocks downloads
+Answer: C

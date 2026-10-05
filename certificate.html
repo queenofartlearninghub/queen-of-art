@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate | Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+.cert{max-width:980px;margin:0 auto;background:#fff;border:14px solid var(--violet);outline:4px solid var(--gold);outline-offset:-26px;border-radius:6px;padding:56px 50px;text-align:center;aspect-ratio:1.414/1;display:flex;flex-direction:column;justify-content:center}
+.cert .brand{font-family:var(--head);font-weight:800;color:var(--violet);font-size:1.5rem}
+.cert h1{font-family:var(--head);font-size:clamp(1.8rem,5vw,3.2rem);color:var(--violet);margin:10px 0 18px}
+.cert .small{color:#5d4f7e}
+.cert .name{font-family:var(--head);font-weight:800;font-size:clamp(1.8rem,5vw,3rem);color:var(--ink);margin:12px auto;padding:0 20px 8px;border-bottom:3px solid var(--gold);display:inline-block;max-width:100%;word-break:break-word}
+.cert .course{font-family:var(--head);font-weight:800;font-size:clamp(1.2rem,3vw,1.9rem);color:var(--violet);margin:12px 0}
+.cert .foot{display:flex;justify-content:space-between;gap:20px;margin-top:34px;text-align:center;flex-wrap:wrap}
+.cert .foot div{flex:1;min-width:180px}
+.cert .line{border-top:2px solid var(--ink);padding-top:6px;margin-top:6px;font-size:.9rem}
+.cert .idline{margin-top:22px;font-size:.85rem;color:#5d4f7e;word-break:break-all}
+.actions{max-width:980px;margin:0 auto 18px;display:flex;gap:12px;flex-wrap:wrap}
+@page{size:A4 landscape;margin:8mm}
+@media print{
+  #top,.hero2,.actions,footer.mini,.noprint{display:none!important}
+  body{background:#fff}
+  main{padding:0!important;max-width:none!important}
+  .cert{border-width:12px;width:100%;aspect-ratio:auto;height:190mm;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header id="top"></header>
+<div class="hero2"><div class="wrap"><h1 id="pageTitle">Certificate</h1><p id="pageSub"></p></div></div>
+
+<main class="wrap pad">
+  <div class="note hide" id="msg"></div>
+  <div class="actions hide" id="actions">
+    <button class="btn" type="button" onclick="window.print()">Print or save as PDF</button>
+    <a class="btn line" href="courses.html">Back to the Learning hub</a>
+  </div>
+  <div class="cert hide" id="cert"></div>
+</main>
+
+<footer class="mini"><div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="courses.html">Learning hub</a><a href="privacy.html">Privacy Policy</a></div></footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  renderTopbar();
+  const params = new URLSearchParams(location.search);
+  const note = t => { $('msg').innerHTML = t; $('msg').classList.remove('hide'); };
+
+  function show(c, verified) {
+    const d = new Date(c.issued);
+    const date = isNaN(d) ? '' : d.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const link = location.origin + location.pathname + '?verify=' + encodeURIComponent(c.id);
+    $('cert').innerHTML = `
+      <div class="brand">Queen of Art</div>
+      <div class="small">Online Learning Courses</div>
+      <h1>Certificate of Completion</h1>
+      <div class="small">This certifies that</div>
+      <div><span class="name">${esc(c.name)}</span></div>
+      <div class="small">has successfully completed all modules and passed every quiz of</div>
+      <div class="course">${esc(c.courseTitle)}</div>
+      <div class="foot">
+        <div><strong>${esc(date)}</strong><div class="line">Date issued</div></div>
+        <div><strong>Coach Mira</strong><div class="line">Founder &amp; Creative Director</div></div>
+      </div>
+      <div class="idline">Certificate ID: <strong>${esc(c.id)}</strong><br>Verify at: ${esc(link)}</div>`;
+    $('cert').classList.remove('hide'); $('actions').classList.remove('hide');
+    if (verified) { $('pageTitle').textContent = 'Valid certificate'; $('pageSub').textContent = 'This certificate was issued by Queen of Art Online Learning Courses.'; $('actions').classList.add('hide'); }
+    else { $('pageTitle').textContent = 'Your certificate'; $('pageSub').textContent = 'Congratulations! Print it or save it as a PDF.'; }
+  }
+
+  // Verification mode: anyone can check a certificate ID
+  const vid = params.get('verify');
+  if (vid) {
+    try {
+      const s = await db.collection('certificates').doc(vid).get();
+      if (!s.exists) return note('No certificate was found with that ID. Please check the ID and try again.');
+      return show({ id: vid, ...s.data() }, true);
+    } catch (e) { return note('Could not check this certificate right now. Please try again later.'); }
+  }
+
+  // Issue mode
+  const cid = params.get('id');
+  if (!cid) return note('Open this page from your course after you pass every module quiz.');
+  const user = await authReady();
+  if (!user) return note('Please <a href="register.html">log in</a> to see your certificate.');
+
+  let course;
+  try { const s = await db.collection('catalog').doc(cid).get(); if (!s.exists) throw 0; course = s.data(); }
+  catch (e) { return note('Course not found.'); }
+
+  const quizzes = (course.outline || []).filter(i => i.type === 'quiz');
+  const progRef = db.collection('users').doc(user.uid).collection('progress').doc(cid);
+  let prog = {};
+  try { prog = (await progRef.get()).data() || {}; } catch (e) { return note('Could not load your progress. Make sure you are enrolled in this course.'); }
+  const passed = prog.passed || {};
+  const complete = quizzes.length > 0 && quizzes.every(q => (passed[q.id] || 0) >= (q.passMark || 80));
+  if (!complete) return note('Your certificate is not ready yet. Pass every module quiz first, then come back. <a href="course.html?id=' + encodeURIComponent(cid) + '">Back to the course</a>');
+
+  try {
+    if (prog.certId) {
+      const s = await db.collection('certificates').doc(prog.certId).get();
+      if (s.exists) return show({ id: prog.certId, ...s.data() }, false);
+    }
+    let name = '';
+    try { name = ((await db.collection('users').doc(user.uid).get()).data() || {}).fullName || ''; } catch (e) {}
+    name = name || user.displayName || '';
+    if (!name) return note('Please add your full name in <a href="profile.html">My profile</a>, then open this page again.');
+    const id = 'QOA-' + Math.random().toString(36).slice(2, 7).toUpperCase() + Date.now().toString(36).toUpperCase();
+    const rec = { uid: user.uid, name, courseId: cid, courseTitle: course.title, issued: new Date().toISOString() };
+    await db.collection('certificates').doc(id).set(rec);
+    await progRef.set({ certId: id }, { merge: true });
+    show({ id, ...rec }, false);
+  } catch (e) { note('Could not create your certificate. Please try again, or contact us if it keeps happening.'); }
+})();
+</script>
+</body>
+</html>
