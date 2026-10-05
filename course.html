@@ -22,9 +22,10 @@
   <div class="note hide" id="gate"></div>
   <div class="layout hide" id="layout">
     <aside class="side">
-      <h3>Lessons</h3>
+      <h3>Modules</h3>
       <div class="muted hide" id="progText"></div>
       <div class="progress hide" id="progBar"><i id="progFill"></i></div>
+      <div id="certBox" style="margin-bottom:12px"></div>
       <div id="outline"></div>
     </aside>
     <section class="viewer panel" id="viewer"></section>
@@ -36,10 +37,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="app.js"></script>
 <script>
 (async () => {
   renderTopbar();
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const cid = new URLSearchParams(location.search).get('id');
   const user = await authReady();
   const admin = isAdminUser(user);
@@ -64,36 +67,40 @@
   const enrolled = mine.includes(cid);
   const canView = enrolled || admin;
 
-  // Load lessons: everything if enrolled, free-preview lessons otherwise
+  // Lessons: everything if enrolled, free-preview lessons otherwise
   const col = db.collection('catalog').doc(cid).collection('lessons');
   const q = canView ? col.where('published', '==', true) : col.where('published', '==', true).where('preview', '==', true);
   const lessons = {};
   try { (await q.get()).forEach(d => lessons[d.id] = { id: d.id, ...d.data() }); } catch (e) {}
 
-  let items = (course.outline || []);
-  if (!items.length) items = Object.values(lessons).sort((a, b) => (a.order || 0) - (b.order || 0)).map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview }));
+  const byOrder = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
+  let items = course.outline || [];
+  if (!items.length) items = Object.values(lessons).sort(byOrder).map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, passMark: l.passMark || 80 }));
+  items = items.map(i => ({ ...i, module: i.module || 1 }));
+  const mods = [...new Set(items.map(i => i.module))].sort((a, b) => a - b);
+  const quizzes = items.filter(i => i.type === 'quiz');
 
-  // Progress (only for enrolled students)
-  let done = [];
+  // Progress (enrolled students only)
+  let done = [], passed = {};
   const progRef = user ? db.collection('users').doc(user.uid).collection('progress').doc(cid) : null;
-  if (enrolled && progRef) { try { const s = await progRef.get(); done = (s.data() || {}).done || []; } catch (e) {} }
+  if (enrolled && progRef) { try { const s = await progRef.get(); const d = s.data() || {}; done = d.done || []; passed = d.passed || {}; } catch (e) {} }
+  const saveProgress = () => progRef.set({ done, passed }, { merge: true });
+
+  // Module rules: a module opens when the previous module's quiz is passed
+  const quizOf = m => items.find(i => i.module === m && i.type === 'quiz');
+  const passedQuiz = qz => !!qz && (passed[qz.id] || 0) >= (qz.passMark || 80);
+  const unlocked = m => {
+    if (admin) return true;
+    const idx = mods.indexOf(m);
+    if (idx <= 0) return true;
+    const pq = quizOf(mods[idx - 1]);
+    return pq ? passedQuiz(pq) : true;
+  };
+  const moduleLocked = it => enrolled && !unlocked(it.module);
+  const accessible = it => (canView || it.preview) && !moduleLocked(it);
 
   $('layout').classList.remove('hide');
-  let current = null;
-
-  async function downloadFile(l, btn) {
-    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing...';
-    try {
-      const fref = db.collection('catalog').doc(cid).collection('files').doc(l.fileId);
-      const meta = (await fref.get()).data();
-      const parts = await Promise.all(Array.from({ length: meta.chunks }, (_, i) => fref.collection('chunks').doc(String(i)).get()));
-      const blob = new Blob(parts.map(d => d.data().data.toUint8Array()), { type: meta.type || 'application/octet-stream' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = meta.name; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 15000);
-    } catch (e) { $('dlmsg').className = 'msg err'; $('dlmsg').textContent = 'Could not download the file. Make sure you are logged in and enrolled, then try again.'; }
-    btn.disabled = false; btn.textContent = label;
-  }
+  let current = null, keyHandler = null;
 
   if (!canView) {
     $('gate').innerHTML = user
@@ -102,28 +109,61 @@
     $('gate').classList.remove('hide');
   }
 
+  function typeLabel(it) {
+    if (it.type === 'quiz') return passedQuiz(it) ? 'Quiz - passed (' + passed[it.id] + '%)' : 'Quiz';
+    return ({ pdf: 'Handout', file: 'Download', video: 'Video', link: 'Link', text: 'Lesson' })[it.type] || 'Lesson';
+  }
+
   function drawOutline() {
-    $('outline').innerHTML = items.map(it => {
-      const locked = !(canView || it.preview);
-      const mark = done.includes(it.id) ? ' (done)' : '';
-      return `<button type="button" class="item ${it.id === current ? 'on' : ''} ${locked ? 'locked' : ''}" data-id="${esc(it.id)}">${esc(it.title)}${mark}<small>${locked ? 'Locked' : (it.preview && !canView ? 'Free preview' : esc(it.type || 'lesson'))}</small></button>`;
-    }).join('') || '<p class="muted">No lessons yet.</p>';
+    let html = '';
+    mods.forEach(m => {
+      const locked = enrolled && !unlocked(m);
+      html += `<div class="mod-h">Module ${m}${locked ? ' (locked)' : ''}</div>`;
+      items.filter(i => i.module === m).forEach(it => {
+        const lock = !accessible(it);
+        const mark = done.includes(it.id) && it.type !== 'quiz' ? ' (done)' : '';
+        html += `<button type="button" class="item ${it.id === current ? 'on' : ''} ${lock ? 'locked' : ''}" data-id="${esc(it.id)}">${esc(it.title)}${mark}<small>${lock ? 'Locked' : (it.preview && !canView ? 'Free preview' : esc(typeLabel(it)))}</small></button>`;
+      });
+    });
+    $('outline').innerHTML = html || '<p class="muted">No lessons yet.</p>';
     $('outline').querySelectorAll('.item').forEach(b => b.onclick = () => open(b.dataset.id));
+
     if (enrolled && items.length) {
-      const n = items.filter(i => done.includes(i.id)).length;
-      $('progText').textContent = n + ' of ' + items.length + ' lessons complete';
+      const total = quizzes.length || items.length;
+      const n = quizzes.length ? quizzes.filter(passedQuiz).length : items.filter(i => done.includes(i.id)).length;
+      $('progText').textContent = quizzes.length ? n + ' of ' + total + ' module quizzes passed' : n + ' of ' + total + ' lessons complete';
       $('progText').classList.remove('hide'); $('progBar').classList.remove('hide');
-      $('progFill').style.width = Math.round(100 * n / items.length) + '%';
+      $('progFill').style.width = Math.round(100 * n / total) + '%';
     }
+    const complete = enrolled && quizzes.length > 0 && quizzes.every(passedQuiz);
+    $('certBox').innerHTML = complete ? `<a class="btn" style="display:block;text-align:center" href="certificate.html?id=${encodeURIComponent(cid)}">Get your certificate</a>` : '';
+  }
+
+  function clearReader() {
+    if (keyHandler) { document.removeEventListener('keydown', keyHandler); keyHandler = null; }
+    window.onresize = null;
+  }
+
+  function lockedPanel(it) {
+    const prev = mods[mods.indexOf(it.module) - 1], pq = quizOf(prev);
+    if (moduleLocked(it) && pq) return `<div class="note">This module is locked. Pass the <strong>Module ${prev} quiz</strong> with at least ${pq.passMark || 80}% to unlock it. You can retake the quiz as many times as you need.</div>`;
+    return user
+      ? 'This lesson is locked. Enroll in this course to open it. See the <a href="payment.html">Payment Terms</a> page.'
+      : 'Please <a href="register.html">log in</a> to open this lesson.';
   }
 
   function open(id) {
+    clearReader();
     current = id; drawOutline();
     const it = items.find(i => i.id === id), l = lessons[id];
-    if (!l) {
-      $('viewer').innerHTML = `<h2>${esc(it ? it.title : 'Lesson')}</h2><div class="note">${user ? 'This lesson is locked. Enroll in this course to open it. See the <a href="payment.html">Payment Terms</a> page.' : 'Please <a href="register.html">log in</a> to open this lesson.'}</div>`;
+    if (!it) return;
+    if (!l || !accessible(it)) {
+      const body = lockedPanel(it);
+      $('viewer').innerHTML = `<h2>${esc(it.title)}</h2>${body.startsWith('<div') ? body : '<div class="note">' + body + '</div>'}`;
       return;
     }
+    if (l.type === 'quiz') return renderQuiz(l, it);
+
     let html = `<h2>${esc(l.title)}</h2>`;
     const url = safeUrl(l.url);
     if (l.type === 'video' && url) {
@@ -131,19 +171,144 @@
       html += emb ? `<div class="video"><iframe src="${esc(emb)}" allowfullscreen loading="lazy" title="${esc(l.title)}"></iframe></div>` : `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the video</a></p>`;
     }
     if (l.body) html += `<div class="body">${esc(l.body)}</div>`;
+    if (l.type === 'pdf' && l.fileId) html += `<div class="pdfbox"><div class="pdfstage" id="stage"><span class="muted">Loading the handout...</span></div><div class="pdfnav"><button class="btn sm alt" id="pdfPrev" type="button">Previous</button><span id="pdfLabel"></span><button class="btn sm alt" id="pdfNext" type="button">Next</button></div><p class="muted" style="text-align:center;font-size:.85rem;margin-top:8px">Swipe left or right, or use the buttons or arrow keys. This handout is for reading online.</p></div>`;
     if (l.type === 'file' && l.fileId) html += `<div class="panel" style="background:var(--lilac);border-color:var(--lilac)"><strong>${esc(l.fileName || 'Course file')}</strong> <span class="muted">(${fmtSize(l.fileSize || 0)})</span><div class="row"><button class="btn alt" id="dlBtn" type="button">Download file</button></div><div id="dlmsg"></div></div>`;
     if (l.type === 'link' && url) html += `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the handout</a></p>`;
     if (enrolled) html += `<div class="row"><button class="btn" id="doneBtn" type="button">${done.includes(id) ? 'Mark as not done' : 'Mark as complete'}</button></div><div id="pmsg"></div>`;
     $('viewer').innerHTML = html;
+
+    if (l.type === 'pdf' && l.fileId) openPdf(l);
     if (l.type === 'file' && l.fileId) $('dlBtn').onclick = () => downloadFile(l, $('dlBtn'));
     if (enrolled) $('doneBtn').onclick = async () => {
       const next = done.includes(id) ? done.filter(x => x !== id) : [...done, id];
-      try { await progRef.set({ done: next }); done = next; open(id); } catch (e) { $('pmsg').className = 'msg err'; $('pmsg').textContent = 'Could not save your progress. Try again.'; }
+      const prev = done; try { done = next; await saveProgress(); open(id); } catch (e) { done = prev; $('pmsg').className = 'msg err'; $('pmsg').textContent = 'Could not save your progress. Try again.'; }
+    };
+  }
+
+  async function loadFileBytes(l) {
+    const fref = db.collection('catalog').doc(cid).collection('files').doc(l.fileId);
+    const meta = (await fref.get()).data();
+    const parts = await Promise.all(Array.from({ length: meta.chunks }, (_, i) => fref.collection('chunks').doc(String(i)).get()));
+    const arrs = parts.map(d => d.data().data.toUint8Array());
+    const bytes = new Uint8Array(arrs.reduce((s, a) => s + a.length, 0));
+    let off = 0; arrs.forEach(a => { bytes.set(a, off); off += a.length; });
+    return { meta, bytes };
+  }
+
+  async function downloadFile(l, btn) {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing...';
+    try {
+      const { meta, bytes } = await loadFileBytes(l);
+      const blob = new Blob([bytes], { type: meta.type || 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = meta.name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+    } catch (e) { $('dlmsg').className = 'msg err'; $('dlmsg').textContent = 'Could not download the file. Make sure you are logged in and enrolled, then try again.'; }
+    btn.disabled = false; btn.textContent = label;
+  }
+
+  // Read-only PDF reader: one page at a time, swipe or buttons, no download button
+  async function openPdf(l) {
+    const stage = $('stage');
+    try {
+      if (!window.pdfjsLib) throw new Error('reader missing');
+      const { bytes } = await loadFileBytes(l);
+      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+      const total = pdf.numPages; let n = 1, busy = false, pending = false;
+      const canvas = document.createElement('canvas');
+      stage.innerHTML = ''; stage.appendChild(canvas);
+      canvas.oncontextmenu = e => e.preventDefault();
+
+      async function draw() {
+        if (busy) { pending = true; return; }
+        busy = true;
+        do {
+          pending = false;
+          try {
+            const page = await pdf.getPage(n);
+            const cssW = Math.min(stage.clientWidth || 700, 900);
+            const base = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: cssW / base.width });
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(vp.width * dpr); canvas.height = Math.floor(vp.height * dpr);
+            canvas.style.width = vp.width + 'px'; canvas.style.height = vp.height + 'px';
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: vp, transform: [dpr, 0, 0, dpr, 0, 0] }).promise;
+            ctx.save(); ctx.scale(dpr, dpr); ctx.globalAlpha = 0.08; ctx.fillStyle = '#3B1C78'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+            const mark = 'Queen of Art - ' + ((user && user.email) || 'student');
+            [0.25, 0.5, 0.75].forEach(f => { ctx.save(); ctx.translate(vp.width / 2, vp.height * f); ctx.rotate(-0.45); ctx.fillText(mark, 0, 0); ctx.restore(); });
+            ctx.restore();
+          } catch (e) {}
+          $('pdfLabel').textContent = 'Page ' + n + ' of ' + total;
+          $('pdfPrev').disabled = n <= 1; $('pdfNext').disabled = n >= total;
+        } while (pending);
+        busy = false;
+      }
+      const go = d => { const m = Math.min(Math.max(1, n + d), total); if (m !== n) { n = m; draw(); } };
+      $('pdfPrev').onclick = () => go(-1); $('pdfNext').onclick = () => go(1);
+      keyHandler = e => { if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); };
+      document.addEventListener('keydown', keyHandler);
+      let sx = null;
+      stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+      stage.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
+      let t; window.onresize = () => { clearTimeout(t); t = setTimeout(draw, 200); };
+      draw();
+    } catch (e) { stage.innerHTML = '<span class="muted">Could not load the handout. Make sure you are logged in and enrolled, then refresh the page.</span>'; }
+  }
+
+  // Quiz: all questions, unlimited retakes, pass mark unlocks the next module
+  function renderQuiz(l, it) {
+    clearReader();
+    const qs = l.questions || [], pass = l.passMark || 80, best = passed[l.id];
+    const order = qs.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    let html = `<h2>${esc(l.title)}</h2><p class="body">${qs.length} questions. You need ${pass}% or higher to unlock the next module. You can retake this quiz as many times as you need.</p>`;
+    if (best != null) html += `<p style="margin-bottom:14px"><span class="tag ok">Best score: ${best}%</span></p>`;
+    if (!qs.length) { $('viewer').innerHTML = html + '<div class="note">This quiz has no questions yet.</div>'; return; }
+    html += '<div id="quizForm">' + order.map((qi, di) => `<div class="q" data-qi="${qi}"><strong>${di + 1}. ${esc(qs[qi].q)}</strong>` +
+      qs[qi].options.map((o, oi) => `<label class="opt"><input type="radio" name="q${qi}" value="${oi}"><span>${esc(o)}</span></label>`).join('') + '</div>').join('') + '</div>';
+    html += '<div class="row"><button class="btn" id="qSubmit" type="button">Submit answers</button></div><div id="qResult"></div>';
+    $('viewer').innerHTML = html;
+
+    $('qSubmit').onclick = async () => {
+      let correct = 0, unanswered = 0; const missed = [];
+      document.querySelectorAll('#quizForm .q').forEach((box, di) => {
+        box.classList.remove('bad');
+        const sel = box.querySelector('input:checked');
+        if (!sel) { unanswered++; return; }
+        if (Number(sel.value) === qs[Number(box.dataset.qi)].a) correct++; else { missed.push(di + 1); box.classList.add('bad'); }
+      });
+      const res = $('qResult');
+      if (unanswered) { res.className = 'result no'; res.textContent = 'Please answer all ' + qs.length + ' questions before you submit. ' + unanswered + ' left.'; return; }
+      const score = Math.round(100 * correct / qs.length);
+      if (score >= pass) {
+        let note = '';
+        if (enrolled) {
+          try { passed[l.id] = Math.max(best || 0, score); if (!done.includes(l.id)) done.push(l.id); await saveProgress(); }
+          catch (e) { note = ' (We could not save your score. Check your connection and submit again.)'; }
+        } else note = ' (Preview mode: scores are not saved.)';
+        const nextMod = mods[mods.indexOf(it.module) + 1];
+        const finished = quizzes.length && quizzes.every(passedQuiz);
+        res.className = 'result ok';
+        res.innerHTML = `<strong>Passed! You scored ${score}% (${correct} of ${qs.length}).</strong>${esc(note)}<br>` +
+          (finished ? 'You have passed every module quiz. Your certificate is ready.' : (nextMod ? 'Module ' + nextMod + ' is now unlocked.' : ''));
+        const row = document.createElement('div'); row.className = 'row';
+        if (finished) row.innerHTML = `<a class="btn" href="certificate.html?id=${encodeURIComponent(cid)}">Get your certificate</a>`;
+        else if (nextMod) { const first = items.find(i => i.module === nextMod); row.innerHTML = '<button class="btn" type="button" id="nextMod">Go to Module ' + nextMod + '</button>'; res.appendChild(row); $('nextMod').onclick = () => first && open(first.id); }
+        if (finished) res.appendChild(row);
+        drawOutline();
+      } else {
+        res.className = 'result no';
+        res.innerHTML = `<strong>You scored ${score}% (${correct} of ${qs.length}). You need ${pass}% to continue.</strong><br>Review these questions: ${missed.join(', ')}. Reread the handout, then try again. You can retake the quiz as many times as you like.`;
+        const row = document.createElement('div'); row.className = 'row';
+        row.innerHTML = '<button class="btn" type="button" id="retry">Try again</button>'; res.appendChild(row);
+        $('retry').onclick = () => { renderQuiz(l, it); window.scrollTo({ top: $('viewer').offsetTop - 80, behavior: 'smooth' }); };
+      }
+      res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     };
   }
 
   drawOutline();
-  const first = items.find(i => canView || i.preview);
+  const first = items.find(accessible);
   if (first) open(first.id);
   else $('viewer').innerHTML = '<p class="muted">Select a lesson to begin. Lessons appear here once they are published.</p>';
 })();
