@@ -9,6 +9,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
 // Admin email(s): must match the list inside your Firestore rules.
 const ADMIN_EMAILS = ['almirabagro12@gmail.com'];
