@@ -11,11 +11,13 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
+
 // Admin email(s): must match the list inside your Firestore rules.
 const ADMIN_EMAILS = ['almirabagro12@gmail.com'];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 const isAdminUser = u => !!u && u.emailVerified && ADMIN_EMAILS.includes(u.email);
 const authReady = () => new Promise(res => { const off = auth.onAuthStateChanged(u => { off(); res(u); }); });
 
