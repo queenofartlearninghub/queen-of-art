@@ -50,7 +50,7 @@
 <script src="app.js"></script>
 <script>
 const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
-const MAX_BYTES = 8 * 1024 * 1024, CHUNK = 800000;
+const MAX_BYTES = 15 * 1024 * 1024, CHUNK = 800000;
 let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
 
 function fail(what, e) {
@@ -145,46 +145,90 @@ async function deleteCourse() {
 }
 
 /* ---------- Lessons ---------- */
+const byModule = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
+const FILE_TYPES = ['file', 'pdf'];
+const TYPE_NAMES = { text: 'Text lesson', video: 'Video', link: 'Link', file: 'Downloadable file', pdf: 'PDF handout (read online)', quiz: 'Quiz' };
+
 async function loadLessons() {
   const s = await db.collection('catalog').doc(cur).collection('lessons').get();
-  lessonList = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+  lessonList = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byModule);
   renderLessons();
 }
+
+function quizToText(qs) {
+  return (qs || []).map((q, i) => (i + 1) + '. ' + q.q + '\n' + q.options.map((o, j) => String.fromCharCode(65 + j) + '. ' + o).join('\n') + '\nAnswer: ' + String.fromCharCode(65 + q.a)).join('\n\n');
+}
+function parseQuiz(text) {
+  const blocks = text.trim().split(/\n\s*\n/).filter(b => b.trim());
+  if (!blocks.length) throw new Error('Paste your quiz questions in the quiz box.');
+  return blocks.map((b, bi) => {
+    const lines = b.split('\n').map(x => x.trim()).filter(Boolean);
+    const q = lines.shift().replace(/^\d+[.)]\s*/, '');
+    const options = []; let ans = -1;
+    lines.forEach(ln => {
+      let m = ln.match(/^answer\s*[:\-]\s*([A-Za-z])/i);
+      if (m) { ans = m[1].toUpperCase().charCodeAt(0) - 65; return; }
+      m = ln.match(/^([A-Za-z])[.)]\s*(.+)$/);
+      if (m) options.push(m[2].trim());
+    });
+    if (!q) throw new Error('Question ' + (bi + 1) + ' has no question text.');
+    if (options.length < 2) throw new Error('Question ' + (bi + 1) + ' needs at least 2 options (A., B., C., ...).');
+    if (ans < 0 || ans >= options.length) throw new Error('Question ' + (bi + 1) + ' needs a line like "Answer: B" that matches one of its options.');
+    return { q, options, a: ans };
+  });
+}
+
 function renderLessons() {
-  const l = lessonList.find(x => x.id === editingLesson) || { type: 'text', published: true, preview: false, order: lessonList.length + 1 };
+  const lastMod = lessonList.length ? (lessonList[lessonList.length - 1].module || 1) : 1;
+  const l = lessonList.find(x => x.id === editingLesson) || { type: 'text', published: true, preview: false, order: lessonList.length + 1, module: lastMod };
+  const showFile = FILE_TYPES.includes(l.type);
   $('lessonsBox').innerHTML = `<div class="panel">
     <h2>Lessons</h2>
-    ${lessonList.map(x => `<div class="lrow"><div><strong>${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(x.type)}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
+    ${lessonList.map(x => `<div class="lrow"><div><strong>Module ${esc(x.module || 1)} - ${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(TYPE_NAMES[x.type] || x.type)}${x.type === 'quiz' ? ' - ' + (x.questions || []).length + ' questions, pass ' + esc(x.passMark || 80) + '%' : ''}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
       <div class="row" style="margin:0"><button class="btn sm line" type="button" data-e="${esc(x.id)}">Edit</button><button class="btn sm line" type="button" data-d="${esc(x.id)}">Delete</button></div></div>`).join('') || '<p class="muted">No lessons yet.</p>'}
   </div>
   <div class="panel">
     <h2>${editingLesson ? 'Edit lesson' : 'Add a lesson'}</h2>
+    <label for="lModule">Module number (1 to 10)</label><input id="lModule" type="number" min="1" max="50" value="${esc(l.module || 1)}">
     <label for="lTitle">Lesson title</label><input id="lTitle" value="${esc(l.title || '')}" placeholder="Module 01: Getting Started with Canva (Reading Handout)">
     <label for="lType">Type</label><select id="lType">
-      <option value="text" ${l.type === 'text' ? 'selected' : ''}>Text lesson</option>
-      <option value="video" ${l.type === 'video' ? 'selected' : ''}>Video (YouTube or Google Drive link)</option>
-      <option value="link" ${l.type === 'link' ? 'selected' : ''}>Handout or file link (Google Drive, etc.)</option>
-      <option value="file" ${l.type === 'file' ? 'selected' : ''}>File (upload from your computer)</option></select>
-    <div id="fileBox" class="${l.type === 'file' ? '' : 'hide'}">
-      <label for="lFile">Upload a file (PDF, Word, PowerPoint, Excel, image, ZIP, or MP3, up to 8 MB)</label>
-      <input type="file" id="lFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">
+      ${Object.keys(TYPE_NAMES).map(k => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${TYPE_NAMES[k]}</option>`).join('')}</select>
+    <div id="fileBox" class="${showFile ? '' : 'hide'}">
+      <label for="lFile" id="lFileLabel">Upload a file</label>
+      <input type="file" id="lFile">
       <p class="muted" style="margin-top:6px">${l.fileName ? 'Current file: ' + esc(l.fileName) + ' (' + fmtSize(l.fileSize || 0) + '). Choose a new file to replace it.' : ''}</p>
       <p class="muted" id="upText"></p>
     </div>
-    <label for="lUrl">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
-    <label for="lBody">Lesson text or notes</label><textarea id="lBody" rows="7">${esc(l.body || '')}</textarea>
-    <label for="lOrder">Order</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
+    <div id="urlBox" class="${l.type === 'video' || l.type === 'link' ? '' : 'hide'}">
+      <label for="lUrl">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
+    </div>
+    <div id="quizBox" class="${l.type === 'quiz' ? '' : 'hide'}">
+      <label for="lQuiz">Quiz questions (aim for 10)</label>
+      <textarea id="lQuiz" rows="16" placeholder="1. Your question here?&#10;A. First option&#10;B. Second option&#10;C. Third option&#10;D. Fourth option&#10;Answer: B&#10;&#10;2. Next question?&#10;A. ...">${esc(quizToText(l.questions))}</textarea>
+      <p class="muted" style="margin-top:6px;font-size:.9rem">Leave a blank line between questions. Each question has options A, B, C, D and one line like "Answer: B".</p>
+      <label for="lPass">Pass mark (%)</label><input id="lPass" type="number" min="1" max="100" value="${esc(l.passMark || 80)}">
+    </div>
+    <label for="lBody">Lesson text or notes (optional)</label><textarea id="lBody" rows="6">${esc(l.body || '')}</textarea>
+    <label for="lOrder">Order inside the module (the quiz should be last)</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
     <label class="chk"><input id="lPrev" type="checkbox" ${l.preview ? 'checked' : ''}> Free preview (anyone can open it)</label>
     <label class="chk"><input id="lPub" type="checkbox" ${l.published ? 'checked' : ''}> Published</label>
-    <p class="muted" style="margin-top:8px;font-size:.9rem">Tip: upload handouts to Google Drive, set sharing to "Anyone with the link", and paste the link above.</p>
     <div class="row"><button class="btn" type="button" id="saveL">${editingLesson ? 'Save changes' : 'Add lesson'}</button>${editingLesson ? '<button class="btn line" type="button" id="cancelL">Cancel</button>' : ''}</div>
   </div>`;
+  const sync = () => {
+    const t = $('lType').value;
+    $('fileBox').classList.toggle('hide', !FILE_TYPES.includes(t));
+    $('urlBox').classList.toggle('hide', !(t === 'video' || t === 'link'));
+    $('quizBox').classList.toggle('hide', t !== 'quiz');
+    $('lFile').accept = t === 'pdf' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3';
+    $('lFileLabel').textContent = t === 'pdf' ? 'Upload the PDF handout (students read it on the page and cannot download it, up to 15 MB)' : 'Upload a file students can download, such as a PPTX (up to 15 MB)';
+  };
+  $('lType').onchange = sync; sync();
   $('lessonsBox').querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editingLesson = b.dataset.e; renderLessons(); window.scrollTo({ top: $('lessonsBox').offsetTop, behavior: 'smooth' }); });
   $('lessonsBox').querySelectorAll('[data-d]').forEach(b => b.onclick = () => deleteLesson(b.dataset.d));
   $('saveL').onclick = saveLesson;
-  $('lType').onchange = () => $('fileBox').classList.toggle('hide', $('lType').value !== 'file');
   if (editingLesson) $('cancelL').onclick = () => { editingLesson = null; renderLessons(); };
 }
+
 /* ---------- File uploads (stored in Firestore in small pieces) ---------- */
 async function uploadFile(cid, f, onp) {
   const fid = 'f-' + Date.now().toString(36);
@@ -210,26 +254,35 @@ async function saveLesson() {
   const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
   if (!title) return flash('Enter a lesson title.');
   if ((type === 'video' || type === 'link') && url && !safeUrl(url)) return flash('The link must start with https://');
+  const mod = Math.max(1, Number($('lModule').value) || 1);
+  let questions = null, passMark = 80;
+  if (type === 'quiz') {
+    try { questions = parseQuiz($('lQuiz').value); } catch (e) { return flash(e.message); }
+    passMark = Math.min(100, Math.max(1, Number($('lPass').value) || 80));
+  }
   const old = lessonList.find(x => x.id === editingLesson) || {};
-  const f = type === 'file' ? $('lFile').files[0] : null;
-  if (type === 'file' && !f && !old.fileId) return flash('Choose a file to upload.');
-  if (f && f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 8 MB. For videos, upload to YouTube and paste the link instead.');
+  const needsFile = FILE_TYPES.includes(type);
+  const f = needsFile ? $('lFile').files[0] : null;
+  if (needsFile && !f && !old.fileId) return flash('Choose a file to upload.');
+  if (type === 'pdf' && f && !/\.pdf$/i.test(f.name)) return flash('Please choose a PDF file for a PDF handout.');
+  if (f && f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 15 MB. For videos, upload to YouTube and paste the link instead.');
   const id = editingLesson || ('l-' + Date.now().toString(36));
   const btn = $('saveL'); btn.disabled = true;
   try {
     let info = {};
-    if (type === 'file') {
+    if (needsFile) {
       if (f) {
         info = await uploadFile(cur, f, p => { $('upText').textContent = 'Uploading... ' + p + '%'; });
         if (old.fileId) await deleteFile(cur, old.fileId);
       } else info = { fileId: old.fileId, fileName: old.fileName, fileSize: old.fileSize, fileType: old.fileType || '' };
     } else if (old.fileId) await deleteFile(cur, old.fileId);
     info = Object.fromEntries(Object.entries(info).filter(([, v]) => v !== undefined));
+    const preview = type === 'quiz' ? false : $('lPrev').checked;
     await db.collection('catalog').doc(cur).collection('lessons').doc(id).set({
-      title, type, url, body: $('lBody').value, order: Number($('lOrder').value) || 1,
-      preview: $('lPrev').checked, published: $('lPub').checked, ...info
+      title, type, url: (type === 'video' || type === 'link') ? url : '', body: $('lBody').value, order: Number($('lOrder').value) || 1,
+      module: mod, preview, published: $('lPub').checked, ...(type === 'quiz' ? { questions, passMark } : {}), ...info
     });
-    if (info.fileId) await db.collection('catalog').doc(cur).collection('files').doc(info.fileId).update({ preview: $('lPrev').checked });
+    if (info.fileId) await db.collection('catalog').doc(cur).collection('files').doc(info.fileId).update({ preview });
     await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
   } catch (e) { fail('Could not save the lesson.', e); btn.disabled = false; }
 }
@@ -245,8 +298,8 @@ async function deleteLesson(id) {
 async function rebuildOutline(cid) {
   const ref = db.collection('catalog').doc(cid);
   const s = await ref.collection('lessons').get();
-  const outline = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.published).sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview }));
+  const outline = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.published).sort(byModule)
+    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, ...(l.type === 'quiz' ? { passMark: l.passMark || 80 } : {}) }));
   await ref.set({ outline }, { merge: true });
 }
 async function addSample() {
