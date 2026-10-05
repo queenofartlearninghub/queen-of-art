@@ -75,3 +75,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--violet)}
 footer.mini{background:var(--ink);color:#cfc6e6;padding:26px 0;font-size:.93rem;margin-top:30px}
 footer.mini a{color:#cfc6e6;margin-right:14px}
 @media(max-width:800px){.layout{grid-template-columns:1fr}}
+
+/* ---- modules, PDF reader, quiz ---- */
+.mod-h{font-family:var(--head);font-weight:800;color:var(--violet);margin:16px 0 6px;font-size:1rem}
+.mod-h:first-of-type{margin-top:4px}
+.pdfbox{background:var(--lilac);border-radius:16px;padding:14px;margin-bottom:18px;user-select:none;-webkit-user-select:none}
+.pdfstage{display:flex;justify-content:center;touch-action:pan-y;min-height:120px;align-items:center}
+.pdfstage canvas{max-width:100%;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);background:#fff}
+.pdfnav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;flex-wrap:wrap}
+.pdfnav span{font-weight:700;color:var(--violet);min-width:110px;text-align:center}
+.q{border:2px solid var(--lilac);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.q.bad{border-color:var(--rose);background:#fff5f8}
+label.opt{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:1rem;margin:0;padding:7px 4px;cursor:pointer}
+label.opt input{margin-top:6px}
+.result{margin-top:16px;padding:16px 18px;border-radius:14px}
+.result.ok{background:#e3f7e8;color:#145a2a}
+.result.no{background:#ffe3ea;color:#8a1236}
+.result .row{margin-top:12px}
