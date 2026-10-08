@@ -111,6 +111,8 @@ function renderEditor(c) {
     <label for="cTitle">Title</label><input id="cTitle" value="${esc(c.title || '')}">
     <label for="cLevel">Level</label><select id="cLevel">${LEVELS.map(l => `<option ${l === c.level ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <label for="cSummary">Short description</label><textarea id="cSummary" rows="3">${esc(c.summary || '')}</textarea>
+    <label for="cCert">Certificate title (shown on the certificate, different from the module title)</label><input id="cCert" value="${esc(c.certTitle || '')}" placeholder="Canva Essentials Certificate">
+    <label for="cCertText">What the student can do (one sentence, shown on the certificate)</label><textarea id="cCertText" rows="3" placeholder="navigate the Canva dashboard, start designs from templates, and save and export work in the right file format.">${esc(c.certText || '')}</textarea>
     <label for="cPrice">Price shown on the course page</label><input id="cPrice" value="${esc(c.price || '')}" placeholder="₱99">
     <label for="cOrder">Order in the list</label><input id="cOrder" type="number" value="${esc(c.order || 1)}">
     <label class="chk"><input id="cPub" type="checkbox" ${c.published ? 'checked' : ''}> Published (visible to students)</label>
@@ -126,7 +128,7 @@ async function saveCourse() {
   if (!title) return flash('Enter a course title.');
   try {
     await db.collection('catalog').doc(id).set({
-      title, level: $('cLevel').value, summary: $('cSummary').value.trim(), price: $('cPrice').value.trim(),
+      title, level: $('cLevel').value, summary: $('cSummary').value.trim(), price: $('cPrice').value.trim(), certTitle: $('cCert').value.trim(), certText: $('cCertText').value.trim(),
       order: Number($('cOrder').value) || 1, published: $('cPub').checked
     }, { merge: true });
   } catch (e) { return fail('Could not save the course.', e); }
