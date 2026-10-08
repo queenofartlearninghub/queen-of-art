@@ -9,7 +9,8 @@
 <style>
 .cert{max-width:980px;margin:0 auto;background:#fff;border:14px solid var(--violet);outline:4px solid var(--gold);outline-offset:-26px;border-radius:6px;padding:56px 50px;text-align:center;aspect-ratio:1.414/1;display:flex;flex-direction:column;justify-content:center}
 .cert .brand{font-family:var(--head);font-weight:800;color:var(--violet);font-size:1.5rem}
-.cert h1{font-family:var(--head);font-size:clamp(1.8rem,5vw,3.2rem);color:var(--violet);margin:10px 0 18px}
+.cert h1{font-family:var(--head);font-size:clamp(1.6rem,4.2vw,2.8rem);color:var(--violet);margin:10px 0 18px}
+.cert .skills{max-width:78%;margin:8px auto 0;font-size:1.05rem}
 .cert .small{color:#5d4f7e}
 .cert .name{font-family:var(--head);font-weight:800;font-size:clamp(1.8rem,5vw,3rem);color:var(--ink);margin:12px auto;padding:0 20px 8px;border-bottom:3px solid var(--gold);display:inline-block;max-width:100%;word-break:break-word}
 .cert .course{font-family:var(--head);font-weight:800;font-size:clamp(1.2rem,3vw,1.9rem);color:var(--violet);margin:12px 0}
@@ -52,18 +53,23 @@
   const params = new URLSearchParams(location.search);
   const note = t => { $('msg').innerHTML = t; $('msg').classList.remove('hide'); };
 
-  function show(c, verified) {
+  function show(c, verified, meta) {
+    meta = meta || {};
     const d = new Date(c.issued);
     const date = isNaN(d) ? '' : d.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
     const link = location.origin + location.pathname + '?verify=' + encodeURIComponent(c.id);
+    const title = meta.certTitle || 'Certificate of Completion';
+    const what = meta.certTitle
+      ? '<div class="small">has successfully completed the course requirements' + (meta.certText ? ' and can now:' : '') + '</div>' +
+        (meta.certText ? '<div class="skills">' + esc(meta.certText) + '</div>' : '')
+      : '<div class="small">has successfully completed the course and passed its quiz:</div><div class="course">' + esc(c.courseTitle) + '</div>';
     $('cert').innerHTML = `
       <div class="brand">Queen of Art</div>
       <div class="small">Online Learning Courses</div>
-      <h1>Certificate of Completion</h1>
+      <h1>${esc(title)}</h1>
       <div class="small">This certifies that</div>
       <div><span class="name">${esc(c.name)}</span></div>
-      <div class="small">has successfully completed all modules and passed every quiz of</div>
-      <div class="course">${esc(c.courseTitle)}</div>
+      ${what}
       <div class="foot">
         <div><strong>${esc(date)}</strong><div class="line">Date issued</div></div>
         <div><strong>Coach Mira</strong><div class="line">Founder &amp; Creative Director</div></div>
@@ -80,7 +86,10 @@
     try {
       const s = await db.collection('certificates').doc(vid).get();
       if (!s.exists) return note('No certificate was found with that ID. Please check the ID and try again.');
-      return show({ id: vid, ...s.data() }, true);
+      const rec = { id: vid, ...s.data() };
+      let meta = {};
+      try { meta = (await db.collection('catalog').doc(rec.courseId).get()).data() || {}; } catch (e) {}
+      return show(rec, true, meta);
     } catch (e) { return note('Could not check this certificate right now. Please try again later.'); }
   }
 
@@ -94,7 +103,7 @@
   try { const s = await db.collection('catalog').doc(cid).get(); if (!s.exists) throw 0; course = s.data(); }
   catch (e) { return note('Course not found.'); }
 
-  const quizzes = (course.outline || []).filter(i => i.type === 'quiz');
+  const quizzes = (course.outline || []).filter(i => i.type === 'quiz' || i.hasQuiz);
   const progRef = db.collection('users').doc(user.uid).collection('progress').doc(cid);
   let prog = {};
   try { prog = (await progRef.get()).data() || {}; } catch (e) { return note('Could not load your progress. Make sure you are enrolled in this course.'); }
@@ -105,7 +114,7 @@
   try {
     if (prog.certId) {
       const s = await db.collection('certificates').doc(prog.certId).get();
-      if (s.exists) return show({ id: prog.certId, ...s.data() }, false);
+      if (s.exists) return show({ id: prog.certId, ...s.data() }, false, course);
     }
     let name = '';
     try { name = ((await db.collection('users').doc(user.uid).get()).data() || {}).fullName || ''; } catch (e) {}
@@ -115,7 +124,7 @@
     const rec = { uid: user.uid, name, courseId: cid, courseTitle: course.title, issued: new Date().toISOString() };
     await db.collection('certificates').doc(id).set(rec);
     await progRef.set({ certId: id }, { merge: true });
-    show({ id, ...rec }, false);
+    show({ id, ...rec }, false, course);
   } catch (e) { note('Could not create your certificate. Please try again, or contact us if it keeps happening.'); }
 })();
 </script>
