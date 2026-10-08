@@ -90,7 +90,7 @@
       <div class="foot">
         <div class="fcol"><div class="fv"><strong>${esc(date)}</strong></div><div class="line">Date issued</div></div>
         <div class="seal">${SEAL}</div>
-        <div class="fcol"><div class="sigarea"><img class="sig" src="signature.png" alt="Signature of Almira Cubol Bagro" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="sigtext">Almira Cubol Bagro</span></div><div class="line"><strong>Almira Cubol Bagro</strong><br>Founder &amp; Creative Director</div></div>
+        <div class="fcol"><div class="sigarea"><img class="sig" src="Signature.png" alt="Signature of Almira Cubol Bagro" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="sigtext">Almira Cubol Bagro</span></div><div class="line"><strong>Almira Cubol Bagro</strong><br>Founder &amp; Creative Director</div></div>
       </div>
       <div class="idrow"><div id="qr"></div><div class="idline">Certificate ID: <strong>${esc(c.id)}</strong><br>Scan the code or open this link to verify:<br>${esc(link)}</div></div>`;
     if (window.QRCode) new QRCode($('qr'), { text: link, width: 76, height: 76, colorDark: '#1E1433', colorLight: '#ffffff' });
