@@ -38,6 +38,7 @@
   <section id="paneS" class="hide">
     <label for="search">Search students</label>
     <input id="search" placeholder="Type a name or email">
+    <div class="chips" id="sfilters" style="margin-top:14px;margin-bottom:0"></div>
     <div id="slist" style="margin-top:18px"></div>
   </section>
 
@@ -147,7 +148,7 @@ async function deleteCourse() {
 /* ---------- Lessons ---------- */
 const byModule = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
 const FILE_TYPES = ['file', 'pdf'];
-const TYPE_NAMES = { text: 'Text lesson', video: 'Video', link: 'Link', file: 'Downloadable file', pdf: 'PDF handout (read online)', quiz: 'Quiz' };
+const TYPE_NAMES = { module: 'Module page (handout + download + quiz in one lesson)', text: 'Text lesson', video: 'Video', link: 'Link', file: 'Downloadable file only', pdf: 'PDF handout only (read online)', quiz: 'Quiz only' };
 
 async function loadLessons() {
   const s = await db.collection('catalog').doc(cur).collection('lessons').get();
@@ -178,47 +179,71 @@ function parseQuiz(text) {
   });
 }
 
+function lessonSummary(x) {
+  if (x.type === 'module') {
+    const parts = [];
+    if (x.pdfId) parts.push('handout');
+    if (x.dlId) parts.push('download');
+    if ((x.questions || []).length) parts.push('quiz (' + x.questions.length + ' questions, pass ' + (x.passMark || 80) + '%)');
+    return 'Module page: ' + (parts.join(', ') || 'text only');
+  }
+  return (TYPE_NAMES[x.type] || x.type) + (x.type === 'quiz' ? ' - ' + (x.questions || []).length + ' questions, pass ' + (x.passMark || 80) + '%' : '');
+}
+
 function renderLessons() {
   const lastMod = lessonList.length ? (lessonList[lessonList.length - 1].module || 1) : 1;
-  const l = lessonList.find(x => x.id === editingLesson) || { type: 'text', published: true, preview: false, order: lessonList.length + 1, module: lastMod };
-  const showFile = FILE_TYPES.includes(l.type);
+  const l = lessonList.find(x => x.id === editingLesson) || { type: 'module', published: true, preview: false, order: lessonList.length + 1, module: lastMod };
+  const cur_ = (name, size) => name ? '<p class="muted" style="margin-top:6px">Current file: ' + esc(name) + ' (' + fmtSize(size || 0) + '). Choose a new file to replace it.</p>' : '';
   $('lessonsBox').innerHTML = `<div class="panel">
     <h2>Lessons</h2>
-    ${lessonList.map(x => `<div class="lrow"><div><strong>Module ${esc(x.module || 1)} - ${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(TYPE_NAMES[x.type] || x.type)}${x.type === 'quiz' ? ' - ' + (x.questions || []).length + ' questions, pass ' + esc(x.passMark || 80) + '%' : ''}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
+    ${lessonList.map(x => `<div class="lrow"><div><strong>Module ${esc(x.module || 1)} - ${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(lessonSummary(x))}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
       <div class="row" style="margin:0"><button class="btn sm line" type="button" data-e="${esc(x.id)}">Edit</button><button class="btn sm line" type="button" data-d="${esc(x.id)}">Delete</button></div></div>`).join('') || '<p class="muted">No lessons yet.</p>'}
   </div>
   <div class="panel">
     <h2>${editingLesson ? 'Edit lesson' : 'Add a lesson'}</h2>
     <label for="lModule">Module number (1 to 10)</label><input id="lModule" type="number" min="1" max="50" value="${esc(l.module || 1)}">
-    <label for="lTitle">Lesson title</label><input id="lTitle" value="${esc(l.title || '')}" placeholder="Module 01: Getting Started with Canva (Reading Handout)">
+    <label for="lTitle">Lesson title</label><input id="lTitle" value="${esc(l.title || '')}" placeholder="Module 01: Getting Started with Canva">
     <label for="lType">Type</label><select id="lType">
       ${Object.keys(TYPE_NAMES).map(k => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${TYPE_NAMES[k]}</option>`).join('')}</select>
-    <div id="fileBox" class="${showFile ? '' : 'hide'}">
+
+    <div id="moduleBox" class="${l.type === 'module' ? '' : 'hide'}">
+      <label for="lMPdf">PDF handout (students read it on the page and cannot download it, up to 15 MB)</label>
+      <input type="file" id="lMPdf" accept=".pdf">${cur_(l.pdfName, l.pdfSize)}
+      <label for="lMDl">Slides to download, such as a PPTX (up to 15 MB)</label>
+      <input type="file" id="lMDl" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">${cur_(l.dlName, l.dlSize)}
+    </div>
+
+    <div id="fileBox" class="${l.type === 'file' || l.type === 'pdf' ? '' : 'hide'}">
       <label for="lFile" id="lFileLabel">Upload a file</label>
-      <input type="file" id="lFile">
-      <p class="muted" style="margin-top:6px">${l.fileName ? 'Current file: ' + esc(l.fileName) + ' (' + fmtSize(l.fileSize || 0) + '). Choose a new file to replace it.' : ''}</p>
-      <p class="muted" id="upText"></p>
+      <input type="file" id="lFile">${cur_(l.fileName, l.fileSize)}
     </div>
-    <div id="urlBox" class="${l.type === 'video' || l.type === 'link' ? '' : 'hide'}">
-      <label for="lUrl">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
+
+    <div id="urlBox" class="${l.type === 'video' || l.type === 'link' || l.type === 'module' ? '' : 'hide'}">
+      <label for="lUrl" id="lUrlLabel">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
     </div>
-    <div id="quizBox" class="${l.type === 'quiz' ? '' : 'hide'}">
-      <label for="lQuiz">Quiz questions (aim for 10)</label>
+
+    <div id="quizBox" class="${l.type === 'quiz' || l.type === 'module' ? '' : 'hide'}">
+      <label for="lQuiz" id="lQuizLabel">Quiz questions (aim for 10)</label>
       <textarea id="lQuiz" rows="16" placeholder="1. Your question here?&#10;A. First option&#10;B. Second option&#10;C. Third option&#10;D. Fourth option&#10;Answer: B&#10;&#10;2. Next question?&#10;A. ...">${esc(quizToText(l.questions))}</textarea>
       <p class="muted" style="margin-top:6px;font-size:.9rem">Leave a blank line between questions. Each question has options A, B, C, D and one line like "Answer: B".</p>
       <label for="lPass">Pass mark (%)</label><input id="lPass" type="number" min="1" max="100" value="${esc(l.passMark || 80)}">
     </div>
+
     <label for="lBody">Lesson text or notes (optional)</label><textarea id="lBody" rows="6">${esc(l.body || '')}</textarea>
-    <label for="lOrder">Order inside the module (the quiz should be last)</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
+    <label for="lOrder">Order inside the module</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
     <label class="chk"><input id="lPrev" type="checkbox" ${l.preview ? 'checked' : ''}> Free preview (anyone can open it)</label>
     <label class="chk"><input id="lPub" type="checkbox" ${l.published ? 'checked' : ''}> Published</label>
+    <p class="muted" id="upText" style="margin-top:10px"></p>
     <div class="row"><button class="btn" type="button" id="saveL">${editingLesson ? 'Save changes' : 'Add lesson'}</button>${editingLesson ? '<button class="btn line" type="button" id="cancelL">Cancel</button>' : ''}</div>
   </div>`;
   const sync = () => {
     const t = $('lType').value;
-    $('fileBox').classList.toggle('hide', !FILE_TYPES.includes(t));
-    $('urlBox').classList.toggle('hide', !(t === 'video' || t === 'link'));
-    $('quizBox').classList.toggle('hide', t !== 'quiz');
+    $('moduleBox').classList.toggle('hide', t !== 'module');
+    $('fileBox').classList.toggle('hide', !(t === 'file' || t === 'pdf'));
+    $('urlBox').classList.toggle('hide', !(t === 'video' || t === 'link' || t === 'module'));
+    $('quizBox').classList.toggle('hide', !(t === 'quiz' || t === 'module'));
+    $('lUrlLabel').textContent = t === 'module' ? 'Video link (optional, YouTube or Google Drive)' : 'Link (for video or handout)';
+    $('lQuizLabel').textContent = t === 'module' ? 'Module quiz (optional, aim for 10 questions)' : 'Quiz questions (aim for 10)';
     $('lFile').accept = t === 'pdf' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3';
     $('lFileLabel').textContent = t === 'pdf' ? 'Upload the PDF handout (students read it on the page and cannot download it, up to 15 MB)' : 'Upload a file students can download, such as a PPTX (up to 15 MB)';
   };
@@ -250,39 +275,65 @@ async function deleteFile(cid, fid) {
   const b = db.batch(); cs.forEach(d => b.delete(d.ref)); b.delete(fref); await b.commit();
 }
 
+const SLOTS = {
+  s: { id: 'fileId', name: 'fileName', size: 'fileSize', type: 'fileType', input: 'lFile' },
+  p: { id: 'pdfId', name: 'pdfName', size: 'pdfSize', type: 'pdfType', input: 'lMPdf' },
+  d: { id: 'dlId', name: 'dlName', size: 'dlSize', type: 'dlType', input: 'lMDl' },
+};
 async function saveLesson() {
   const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
   if (!title) return flash('Enter a lesson title.');
-  if ((type === 'video' || type === 'link') && url && !safeUrl(url)) return flash('The link must start with https://');
+  const hasUrl = type === 'video' || type === 'link' || type === 'module';
+  if (hasUrl && url && !safeUrl(url)) return flash('The link must start with https://');
   const mod = Math.max(1, Number($('lModule').value) || 1);
+  const quizText = $('lQuiz').value.trim();
   let questions = null, passMark = 80;
-  if (type === 'quiz') {
+  if (type === 'quiz' || (type === 'module' && quizText)) {
     try { questions = parseQuiz($('lQuiz').value); } catch (e) { return flash(e.message); }
     passMark = Math.min(100, Math.max(1, Number($('lPass').value) || 80));
   }
   const old = lessonList.find(x => x.id === editingLesson) || {};
-  const needsFile = FILE_TYPES.includes(type);
-  const f = needsFile ? $('lFile').files[0] : null;
-  if (needsFile && !f && !old.fileId) return flash('Choose a file to upload.');
-  if (type === 'pdf' && f && !/\.pdf$/i.test(f.name)) return flash('Please choose a PDF file for a PDF handout.');
-  if (f && f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 15 MB. For videos, upload to YouTube and paste the link instead.');
+  const active = type === 'module' ? ['p', 'd'] : (type === 'file' || type === 'pdf' ? ['s'] : []);
+  const picked = {};
+  for (const a of active) {
+    const f = $(SLOTS[a].input).files[0];
+    if (f) {
+      if ((a === 'p' || type === 'pdf') && !/\.pdf$/i.test(f.name)) return flash('The PDF handout must be a PDF file.');
+      if (f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 15 MB. For videos, upload to YouTube and paste the link instead.');
+      picked[a] = f;
+    }
+  }
+  if (active.includes('s') && !picked.s && !old.fileId) return flash('Choose a file to upload.');
+  if (type === 'module' && !picked.p && !picked.d && !old.pdfId && !old.dlId && !old.fileId && !questions && !$('lBody').value.trim() && !url) return flash('Add at least a handout, a download, a quiz, a video, or some text.');
+
   const id = editingLesson || ('l-' + Date.now().toString(36));
   const btn = $('saveL'); btn.disabled = true;
   try {
-    let info = {};
-    if (needsFile) {
-      if (f) {
-        info = await uploadFile(cur, f, p => { $('upText').textContent = 'Uploading... ' + p + '%'; });
-        if (old.fileId) await deleteFile(cur, old.fileId);
-      } else info = { fileId: old.fileId, fileName: old.fileName, fileSize: old.fileSize, fileType: old.fileType || '' };
-    } else if (old.fileId) await deleteFile(cur, old.fileId);
-    info = Object.fromEntries(Object.entries(info).filter(([, v]) => v !== undefined));
-    const preview = type === 'quiz' ? false : $('lPrev').checked;
+    const info = {}, toDelete = [];
+    let adopted = null;
+    const isPdfName = n => /\.pdf$/i.test(n || '');
+    for (const a of ['p', 'd', 's']) {
+      const k = SLOTS[a];
+      if (!active.includes(a)) { if (old[k.id] && old[k.id] !== adopted) toDelete.push(old[k.id]); continue; }
+      if (picked[a]) {
+        const r = await uploadFile(cur, picked[a], pr => { $('upText').textContent = 'Uploading... ' + pr + '%'; });
+        info[k.id] = r.fileId; info[k.name] = r.fileName; info[k.size] = r.fileSize; info[k.type] = r.fileType;
+        if (old[k.id]) toDelete.push(old[k.id]);
+      } else if (old[k.id]) {
+        info[k.id] = old[k.id]; info[k.name] = old[k.name]; info[k.size] = old[k.size]; info[k.type] = old[k.type] || '';
+      } else if (type === 'module' && old.fileId && !adopted && ((a === 'p' && isPdfName(old.fileName)) || (a === 'd' && !isPdfName(old.fileName)))) {
+        // move the file from an older single-file lesson into this module page
+        adopted = old.fileId;
+        info[k.id] = old.fileId; info[k.name] = old.fileName; info[k.size] = old.fileSize; info[k.type] = old.fileType || '';
+      }
+    }
+    const preview = $('lPrev').checked;
     await db.collection('catalog').doc(cur).collection('lessons').doc(id).set({
-      title, type, url: (type === 'video' || type === 'link') ? url : '', body: $('lBody').value, order: Number($('lOrder').value) || 1,
-      module: mod, preview, published: $('lPub').checked, ...(type === 'quiz' ? { questions, passMark } : {}), ...info
+      title, type, url: hasUrl ? url : '', body: $('lBody').value, order: Number($('lOrder').value) || 1,
+      module: mod, preview, published: $('lPub').checked, ...(questions ? { questions, passMark } : {}), ...info
     });
-    if (info.fileId) await db.collection('catalog').doc(cur).collection('files').doc(info.fileId).update({ preview });
+    for (const fid of [info.fileId, info.pdfId, info.dlId].filter(Boolean)) await db.collection('catalog').doc(cur).collection('files').doc(fid).update({ preview });
+    for (const fid of toDelete) { try { await deleteFile(cur, fid); } catch (e) {} }
     await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
   } catch (e) { fail('Could not save the lesson.', e); btn.disabled = false; }
 }
@@ -290,7 +341,7 @@ async function deleteLesson(id) {
   if (!confirm('Delete this lesson?')) return;
   try {
     const l = lessonList.find(x => x.id === id) || {};
-    if (l.fileId) await deleteFile(cur, l.fileId);
+    for (const fid of [l.fileId, l.pdfId, l.dlId].filter(Boolean)) await deleteFile(cur, fid);
     await db.collection('catalog').doc(cur).collection('lessons').doc(id).delete();
     await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson deleted.', true);
   } catch (e) { fail('Could not delete the lesson.', e); }
@@ -299,7 +350,7 @@ async function rebuildOutline(cid) {
   const ref = db.collection('catalog').doc(cid);
   const s = await ref.collection('lessons').get();
   const outline = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.published).sort(byModule)
-    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, ...(l.type === 'quiz' ? { passMark: l.passMark || 80 } : {}) }));
+    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, ...(l.type === 'quiz' || (l.questions || []).length ? { passMark: l.passMark || 80 } : {}), ...((l.type === 'module' && (l.questions || []).length) ? { hasQuiz: true } : {}) }));
   await ref.set({ outline }, { merge: true });
 }
 async function addSample() {
@@ -314,6 +365,10 @@ async function addSample() {
 }
 
 /* ---------- Students ---------- */
+const NOT_PAID = 'Not yet paid. No access to learning.';
+let studentFilter = 'all';
+const hasAccess = st => (st.courses || []).length > 0;
+
 async function loadStudents() {
   try {
     const s = await db.collection('users').get();
@@ -322,24 +377,52 @@ async function loadStudents() {
   } catch (e) { fail('Could not load students. Check your Firestore rules.', e); return; }
   drawStudents();
 }
+
 function drawStudents() {
   const q = $('search').value.trim().toLowerCase();
-  const list = students.filter(s => !q || (s.fullName || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q));
-  $('slist').innerHTML = list.map(s => `<div class="student" data-u="${esc(s.uid)}">
-      <strong>${esc(s.fullName || 'No name yet')}</strong> <span class="muted">${esc(s.email || s.uid)}</span>
+  const open = students.filter(hasAccess).length, locked = students.length - open;
+  $('sfilters').innerHTML = [['all', 'All (' + students.length + ')'], ['open', 'Access unlocked (' + open + ')'], ['locked', 'Not paid (' + locked + ')']]
+    .map(([k, t]) => `<button type="button" class="${studentFilter === k ? 'on' : ''}" data-f="${k}">${t}</button>`).join('');
+  $('sfilters').querySelectorAll('button').forEach(b => b.onclick = () => { studentFilter = b.dataset.f; drawStudents(); });
+
+  const list = students.filter(s =>
+    (!q || (s.fullName || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q)) &&
+    (studentFilter === 'all' || (studentFilter === 'open' ? hasAccess(s) : !hasAccess(s))));
+
+  $('slist').innerHTML = list.map(s => {
+    const ok = hasAccess(s);
+    return `<div class="student" data-u="${esc(s.uid)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><strong>${esc(s.fullName || 'No name yet')}</strong> <span class="muted">${esc(s.email || s.uid)}</span></div>
+        <span class="tag ${ok ? 'ok' : ''}" style="${ok ? '' : 'background:#ffe3ea;color:#8a1236'}">${ok ? 'Access unlocked' : 'No access (not paid)'}</span>
+      </div>
       <label>Courses unlocked</label>
       <div class="checks">${courses.map(c => `<label class="chk" style="margin:0"><input type="checkbox" value="${esc(c.id)}" ${(s.courses || []).includes(c.id) ? 'checked' : ''}> ${esc(c.title || c.id)}</label>`).join('') || '<span class="muted">Create a course first.</span>'}</div>
       <label>Payment terms (the student sees this)</label>
       <input class="pay" value="${esc(s.payment || '')}" placeholder="Per module: ₱99 (Paid)">
-      <div class="row"><button class="btn sm" type="button">Save student</button></div>
-    </div>`).join('') || '<p class="muted">No students found. Students appear here after they open their profile once.</p>';
+      <div class="row"><button class="btn sm" type="button" data-act="save">Save student</button><button class="btn sm line" type="button" data-act="lock">Lock access (not paid)</button></div>
+    </div>`;
+  }).join('') || '<p class="muted">No students found here. Students appear after they open their profile once.</p>';
+
   $('slist').querySelectorAll('.student').forEach(card => {
-    card.querySelector('button').onclick = async () => {
+    const uid = card.dataset.u, st = students.find(x => x.uid === uid), who = st.fullName || st.email || 'student';
+    const finish = async (data, msg) => {
+      try { await db.collection('users').doc(uid).update(data); flash(msg, true); await loadStudents(); }
+      catch (e) { fail('Could not save ' + who + '.', e); }
+    };
+    card.querySelector('[data-act=save]').onclick = () => {
       const ids = Array.from(card.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value);
-      // keep any older course entries that are not in the catalog
-      const old = (students.find(x => x.uid === card.dataset.u).courses || []).filter(c => !courses.some(k => k.id === c));
-      try { await db.collection('users').doc(card.dataset.u).update({ courses: [...ids, ...old], payment: card.querySelector('.pay').value.trim() || 'No payment recorded yet' }); flash('Student saved.', true); loadStudents(); }
-      catch (e) { fail('Could not save. Check your Firestore rules.', e); }
+      // keep older course entries that are not in the catalog
+      const old = (st.courses || []).filter(c => !courses.some(k => k.id === c));
+      const all = [...ids, ...old];
+      let pay = card.querySelector('.pay').value.trim();
+      if (!all.length && (!pay || pay === 'No payment recorded yet')) pay = NOT_PAID;
+      finish({ courses: all, payment: pay || 'No payment recorded yet' },
+        'Saved ' + who + ': ' + (all.length ? all.length + ' course(s) unlocked.' : 'no access (not paid).'));
+    };
+    card.querySelector('[data-act=lock]').onclick = () => {
+      if (!confirm('Lock all courses for ' + who + '? They will not be able to open any lessons.')) return;
+      finish({ courses: [], payment: NOT_PAID }, 'Locked ' + who + ': no access to learning.');
     };
   });
 }
