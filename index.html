@@ -84,7 +84,7 @@ nav a:hover{color:var(--marigold)}
 .plan.best .btn{background:var(--violet-dark);border-color:var(--violet-dark)}
 
 /* mentors */
-.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px}
+/*.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px}
 .person .pic{width:96px;height:96px;border-radius:50%;background:var(--violet);color:var(--marigold);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2rem;margin-bottom:14px}
 .person:nth-child(2) .pic{background:var(--rose);color:var(--white)}
 .person:nth-child(3) .pic{background:var(--marigold);color:var(--violet-dark)}
@@ -92,6 +92,152 @@ nav a:hover{color:var(--marigold)}
 .person .role{color:#6a5a8c;font-weight:700;margin-bottom:8px}
 .person .pic{position:relative;overflow:hidden}
 .person .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+  /* ----- Mentors Section ----- */
+.mentors-section {
+  padding: 60px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.mentors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 40px;
+  margin-top: 40px;
+}
+
+.mentor-card {
+  text-align: center;
+  padding: 30px 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transition: transform 0.3s ease;
+}
+
+.mentor-card:hover {
+  transform: translateY(-5px);
+}
+
+.mentor-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 3px solid #f0f0f0;
+}
+
+.mentor-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #1a1a2e;
+}
+
+.mentor-position {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.mentor-bio {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #444;
+  margin-bottom: 20px;
+}
+
+.hire-btn {
+  padding: 10px 24px;
+  background: #4a6cf7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.hire-btn:hover {
+  background: #3a5ce0;
+}
+
+/* ----- Modal Popup Styles ----- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 550px;
+  width: 100%;
+  padding: 30px;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #111;
+}
+
+.modal-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+.modal-title {
+  margin: 0 0 5px;
+  font-size: 1.4rem;
+  color: #1a1a2e;
+}
+
+.modal-subtitle {
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.modal-section {
+  margin-bottom: 16px;
+}
+
+.modal-label {
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.modal-value {
+  color: #555;
+  line-height: 1.5;
+}
   
 /* tools + contact + footer */
 .tools{background:var(--lilac)}
@@ -277,29 +423,143 @@ nav{align-items:center}
   </div>
 </section>
 
-<section id="mentors">
-  <div class="wrap">
-    <h2>Meet our mentors</h2>
-    <p class="lead">Dedicated mentors nurturing every artist.</p>
-    <div class="team">
-      <div class="person">
-        <div class="pic"><span aria-hidden="true">M</span><img src="mira.jpg" alt="Coach Mira" onerror="this.remove()"></div>
-        <h3>Coach Mira</h3><div class="role">Founder &amp; Creative Director</div>
-        <p>Founder of Queen of Art. Mira teaches hands-on design in Canva and other tools, and shares real strategies for landing clients and building a freelance business.</p>
-      </div>
-      <div class="person">
-        <div class="pic"><span aria-hidden="true">S</span><img src="sarah.jpg" alt="Coach Sarah" onerror="this.remove()"></div>
-        <h3>Coach Sarah</h3><div class="role">Co-Founder, SEO Content &amp; Lead Designer</div>
-        <p>Sarah combines SEO-optimized content with eye-catching design to help brands grow and stand out online.</p>
-      </div>
-      <div class="person">
-        <div class="pic"><span aria-hidden="true">Z</span><img src="zen.jpg" alt="Consultant Zen" onerror="this.remove()"></div>
-        <h3>Consultant Zen</h3><div class="role">Legal Consultant</div>
-        <p>Zen covers the legal side of design: copyright, contracts, and licensing, so designers can protect their work and their business.</p>
-      </div>
+<section class="mentors-section" id="mentors">
+  <h2>Meet our mentors</h2>
+  <p>Dedicated mentors nurturing every artist.</p>
+
+  <div class="mentors-grid">
+    <!-- Coach Mira -->
+    <div class="mentor-card">
+      <img src="images/mira.jpg" alt="Coach Mira" class="mentor-avatar">
+      <h3 class="mentor-name">Coach Mira</h3>
+      <p class="mentor-position">Founder & Creative Director</p>
+      <p class="mentor-bio">Founder of Queen of Art. Mira teaches hands-on design in Canva and other tools, and shares real strategies for landing clients and building a freelance business.</p>
+      <button class="hire-btn" data-mentor="mira">Hire Me</button>
+    </div>
+
+    <!-- Coach Sarah -->
+    <div class="mentor-card">
+      <img src="images/sarah.jpg" alt="Coach Sarah" class="mentor-avatar">
+      <h3 class="mentor-name">Coach Sarah</h3>
+      <p class="mentor-position">Co-Founder, SEO Content & Lead Designer</p>
+      <p class="mentor-bio">Sarah combines SEO-optimized content with eye-catching design to help brands grow and stand out online.</p>
+      <button class="hire-btn" data-mentor="sarah">Hire Me</button>
+    </div>
+
+    <!-- Consultant Zen -->
+    <div class="mentor-card">
+      <img src="images/zen.jpg" alt="Consultant Zen" class="mentor-avatar">
+      <h3 class="mentor-name">Consultant Zen</h3>
+      <p class="mentor-position">Legal Consultant</p>
+      <p class="mentor-bio">Zen covers the legal side of design: copyright, contracts, and licensing, so designers can protect their work and their business.</p>
+      <button class="hire-btn" data-mentor="zen">Hire Me</button>
     </div>
   </div>
 </section>
+
+<!-- Modal Popup -->
+<div class="modal-overlay" id="hireModal">
+  <div class="modal-content">
+    <span class="modal-close">&times;</span>
+    <img id="modalAvatar" src="" alt="" class="modal-avatar">
+    <h3 class="modal-title" id="modalName"></h3>
+    <p class="modal-subtitle" id="modalPosition"></p>
+
+    <div class="modal-section">
+      <span class="modal-label">Summary</span>
+      <p class="modal-value" id="modalSummary"></p>
+    </div>
+    <div class="modal-section">
+      <span class="modal-label">Core Competences</span>
+      <p class="modal-value" id="modalSkills"></p>
+    </div>
+    <div class="modal-section">
+      <span class="modal-label">Education</span>
+      <p class="modal-value" id="modalEducation"></p>
+    </div>
+    <div class="modal-section">
+      <span class="modal-label">Email</span>
+      <p class="modal-value" id="modalEmail"></p>
+    </div>
+    <div class="modal-section">
+      <span class="modal-label">Contact Details</span>
+      <p class="modal-value" id="modalContact"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Mentor detailed data — EDIT THESE WITH ACTUAL INFO
+const mentorData = {
+  mira: {
+    name: "Coach Mira",
+    position: "Founder & Creative Director",
+    avatar: "images/mira.jpg",
+    summary: "Founder of Queen of Art with years of experience in creative design and freelancing. Passionate about helping beginners turn creative skills into sustainable income.",
+    skills: "Canva Design, Graphic Design, Branding, Freelance Strategy, Client Acquisition",
+    education: "Bachelor of Science in Information Technology-[ACLC College of Butuan]" "Master Level in Public Administration-[CSU-Bayugan External Campus]",
+    email: "mira@queenofart.com",
+    contact: "+63 977 467 3966"
+  },
+  sarah: {
+    name: "Coach Sarah",
+    position: "Co-Founder, SEO Content & Lead Designer",
+    avatar: "images/sarah.jpg",
+    summary: "Bridging beautiful design with data-driven SEO strategies. Helping creators and brands build strong online presence that converts.",
+    skills: "SEO Content Design, Brand Identity, Social Media Graphics, Digital Marketing, Visual Storytelling",
+    education: "Bachelor of Science in Information Technology",
+    email: "sarah@queenofart.com",
+    contact: "+63 930 761 3364"
+  },
+  zen: {
+    name: "Consultant Zen",
+    position: "Legal Consultant",
+    avatar: "images/zen.jpg",
+    summary: "Specializes in intellectual property and business law for creative professionals. Dedicated to protecting designers' work and rights.",
+    skills: "Copyright Law, Contract Drafting, Licensing, Business Registration, IP Protection",
+    education: "Bachelor of Laws — [Your Law School]",
+    email: "zen@queenofart.com",
+    contact: "+63 965 783 9098"
+  }
+};
+
+// Modal elements
+const modal = document.getElementById('hireModal');
+const closeBtn = document.querySelector('.modal-close');
+const hireButtons = document.querySelectorAll('.hire-btn');
+
+// Open modal
+hireButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-mentor');
+    const data = mentorData[id];
+
+    document.getElementById('modalName').textContent = data.name;
+    document.getElementById('modalPosition').textContent = data.position;
+    document.getElementById('modalAvatar').src = data.avatar;
+    document.getElementById('modalAvatar').alt = data.name;
+    document.getElementById('modalSummary').textContent = data.summary;
+    document.getElementById('modalSkills').textContent = data.skills;
+    document.getElementById('modalEducation').textContent = data.education;
+    document.getElementById('modalEmail').textContent = data.email;
+    document.getElementById('modalContact').textContent = data.contact;
+
+    modal.style.display = 'flex';
+  });
+});
+
+// Close modal
+closeBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+// Click outside to close
+window.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+  </script>
 
 <section class="tools" id="tools">
   <div class="wrap">
