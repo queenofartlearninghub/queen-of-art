@@ -18,7 +18,22 @@
 </div>
 
 <main class="wrap pad">
-  <div class="chips" id="filters"></div>
+  <div class="search-wrap" style="margin-bottom:20px;">
+  <input
+    id="search"
+    type="text"
+    placeholder="Search courses..."
+    style="
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #ddd;
+      font-size:16px;
+    "
+  >
+</div>
+
+<div class="chips" id="filters"></div>
   <div class="cards" id="grid"></div>
   <p class="note hide" id="empty">No courses are published yet. Please check back soon.</p>
   <div class="msg err hide" id="err"></div>
@@ -65,48 +80,53 @@ let activeCategory = 'All';
 let searchTerm = '';
   
 
-  function draw(){
+ function draw() {
 
-  $('categories').innerHTML =
+  $('filters').innerHTML =
     categories.map(cat => `
       <button
         type="button"
-        class="${cat===activeCategory?'on':''}"
+        class="${cat === activeCategory ? 'on' : ''}"
         data-cat="${cat}">
         ${cat}
       </button>
     `).join('');
 
-  $('categories')
+  $('filters')
     .querySelectorAll('button')
-    .forEach(btn=>{
-      btn.onclick=()=>{
-        activeCategory=btn.dataset.cat;
+    .forEach(btn => {
+      btn.onclick = () => {
+        activeCategory = btn.dataset.cat;
         draw();
       };
     });
 
-  const filtered = list.filter(course=>{
+  const filtered = list.filter(course => {
 
-    const matchesCategory =
-      activeCategory==='All'
-      || course.category===activeCategory;
+  const matchesCategory =
+    activeCategory === 'All' ||
+    course.category === activeCategory;
 
-    const matchesSearch =
-      !searchTerm ||
-      course.title.toLowerCase().includes(searchTerm) ||
-      (course.summary||'').toLowerCase().includes(searchTerm);
+  const matchesSearch =
+    !searchTerm ||
+    (course.title || '')
+      .toLowerCase()
+      .includes(searchTerm) ||
 
-    return matchesCategory && matchesSearch;
-  });
+    (course.summary || '')
+      .toLowerCase()
+      .includes(searchTerm);
 
-  $('grid').innerHTML = filtered.map(c=>{
+  return matchesCategory && matchesSearch;
+
+});
+
+  $('grid').innerHTML = filtered.map(c => {
 
     const enrolled = mine.includes(c.id);
 
     return `
       <article class="card">
-
         <div>
           <span class="tag">${c.category || 'Learning Module'}</span>
           ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}
@@ -122,15 +142,24 @@ let searchTerm = '';
            href="course.html?id=${encodeURIComponent(c.id)}">
           ${enrolled ? 'Continue Learning' : 'View Course'}
         </a>
-
       </article>
     `;
   }).join('');
 }
-  $('search').addEventListener('input', e=>{
-  searchTerm = e.target.value.toLowerCase();
-  draw();
+const searchBox = $('search');
+
+if (searchBox) {
+  searchBox.addEventListener('input', e => {
+    searchTerm = e.target.value.toLowerCase();
+    draw();
+  });
+}
+
+draw();
+
 })();
 </script>
 </body>
 </html>
+
+ 
