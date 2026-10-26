@@ -114,6 +114,16 @@ function renderEditor(c) {
     <label for="cCert">Certificate title (shown on the certificate, different from the module title)</label><input id="cCert" value="${esc(c.certTitle || '')}" placeholder="Canva Essentials Certificate">
     <label for="cCertText">What the student can do (one sentence, shown on the certificate)</label><textarea id="cCertText" rows="3" placeholder="navigate the Canva dashboard, start designs from templates, and save and export work in the right file format.">${esc(c.certText || '')}</textarea>
     <label for="cPrice">Price shown on the course page</label><input id="cPrice" value="${esc(c.price || '')}" placeholder="₱99">
+    <label for="cCategory">Category</label>
+
+<select id="cCategory">
+  <option value="Career Templates" ${c.category === 'Career Templates' ? 'selected' : ''}>Career Templates</option>
+  <option value="Beginner ₱99" ${c.category === 'Beginner ₱99' ? 'selected' : ''}>Beginner ₱99</option>
+  <option value="Intermediate ₱199" ${c.category === 'Intermediate ₱199' ? 'selected' : ''}>Intermediate ₱199</option>
+  <option value="Advanced ₱299" ${c.category === 'Advanced ₱299' ? 'selected' : ''}>Advanced ₱299</option>
+  <option value="Certification ₱499" ${c.category === 'Certification ₱499' ? 'selected' : ''}>Certification ₱499</option>
+  <option value="Premium ₱999" ${c.category === 'Premium ₱999' ? 'selected' : ''}>Premium ₱999</option>
+</select>
     <label for="cOrder">Order in the list</label><input id="cOrder" type="number" value="${esc(c.order || 1)}">
     <label class="chk"><input id="cPub" type="checkbox" ${c.published ? 'checked' : ''}> Published (visible to students)</label>
     <div class="row"><button class="btn" type="button" id="saveC">Save course</button>${isNew ? '' : '<button class="btn line" type="button" id="delC">Delete course</button>'}</div>
@@ -122,15 +132,23 @@ function renderEditor(c) {
   if (!isNew) $('delC').onclick = deleteCourse;
 }
 async function saveCourse() {
+  const category = $('cCategory').value;
   const id = $('cId').value.trim();
   if (!/^[a-z0-9-]{3,60}$/.test(id)) return flash('Course ID must be 3 to 60 characters: small letters, numbers, and dashes only.');
   const title = $('cTitle').value.trim();
   if (!title) return flash('Enter a course title.');
   try {
     await db.collection('catalog').doc(id).set({
-      title, level: $('cLevel').value, summary: $('cSummary').value.trim(), price: $('cPrice').value.trim(), certTitle: $('cCert').value.trim(), certText: $('cCertText').value.trim(),
-      order: Number($('cOrder').value) || 1, published: $('cPub').checked
-    }, { merge: true });
+  title,
+  level: $('cLevel').value,
+  category: $('cCategory').value,
+  summary: $('cSummary').value.trim(),
+  price: $('cPrice').value.trim(),
+  certTitle: $('cCert').value.trim(),
+  certText: $('cCertText').value.trim(),
+  order: Number($('cOrder').value) || 1,
+  published: $('cPub').checked
+}, { merge: true });
   } catch (e) { return fail('Could not save the course.', e); }
   flash('Course saved.', true);
   try { await loadCourses(); await selectCourse(id); } catch (e) { fail('The course was saved, but the page could not refresh.', e); }
