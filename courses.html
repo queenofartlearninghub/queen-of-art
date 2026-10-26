@@ -51,25 +51,84 @@
   list.sort((a, b) => (a.order || 0) - (b.order || 0));
   if (!list.length) { $('empty').classList.remove('hide'); return; }
 
-  const levels = ['All', ...Array.from(new Set(list.map(c => c.level).filter(Boolean)))];
-  let level = 'All';
+ const categories = [
+  'All',
+  'Career Templates',
+  'Beginner ₱99',
+  'Intermediate ₱199',
+  'Advanced ₱299',
+  'Certification ₱499',
+  'Premium ₱999'
+];
 
-  function draw() {
-    $('filters').innerHTML = levels.map(l => `<button type="button" class="${l === level ? 'on' : ''}" data-l="${esc(l)}">${esc(l)}</button>`).join('');
-    $('filters').querySelectorAll('button').forEach(b => b.onclick = () => { level = b.dataset.l; draw(); });
-    $('grid').innerHTML = list.filter(c => level === 'All' || c.level === level).map(c => {
-      const enrolled = mine.includes(c.id);
-      const lessons = (c.outline || []).length;
-      return `<article class="card">
-        <div><span class="tag">${esc(c.level || 'Course')}</span> ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}</div>
-        <h3>${esc(c.title)}</h3>
-        <p>${esc(c.summary || '')}</p>
-        <div class="muted" style="margin-bottom:10px">${lessons} lesson${lessons === 1 ? '' : 's'}</div>
-        ${c.price && !enrolled ? `<div class="price">${esc(c.price)}</div>` : ''}
-        <a class="btn" href="course.html?id=${encodeURIComponent(c.id)}">${enrolled ? 'Continue learning' : 'View course'}</a>
-      </article>`;
-    }).join('');
-  }
+let activeCategory = 'All';
+let searchTerm = '';
+  
+
+  function draw(){
+
+  $('categories').innerHTML =
+    categories.map(cat => `
+      <button
+        type="button"
+        class="${cat===activeCategory?'on':''}"
+        data-cat="${cat}">
+        ${cat}
+      </button>
+    `).join('');
+
+  $('categories')
+    .querySelectorAll('button')
+    .forEach(btn=>{
+      btn.onclick=()=>{
+        activeCategory=btn.dataset.cat;
+        draw();
+      };
+    });
+
+  const filtered = list.filter(course=>{
+
+    const matchesCategory =
+      activeCategory==='All'
+      || course.category===activeCategory;
+
+    const matchesSearch =
+      !searchTerm ||
+      course.title.toLowerCase().includes(searchTerm) ||
+      (course.summary||'').toLowerCase().includes(searchTerm);
+
+    return matchesCategory && matchesSearch;
+  });
+
+  $('grid').innerHTML = filtered.map(c=>{
+
+    const enrolled = mine.includes(c.id);
+
+    return `
+      <article class="card">
+
+        <div>
+          <span class="tag">${c.category || 'Learning Module'}</span>
+          ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}
+        </div>
+
+        <h3>${c.title}</h3>
+
+        <p>${c.summary || ''}</p>
+
+        ${c.price ? `<div class="price">${c.price}</div>` : ''}
+
+        <a class="btn"
+           href="course.html?id=${encodeURIComponent(c.id)}">
+          ${enrolled ? 'Continue Learning' : 'View Course'}
+        </a>
+
+      </article>
+    `;
+  }).join('');
+}
+  $('search').addEventListener('input', e=>{
+  searchTerm = e.target.value.toLowerCase();
   draw();
 })();
 </script>
