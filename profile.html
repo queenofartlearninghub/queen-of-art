@@ -33,17 +33,6 @@ ul.courses{list-style:none}
 ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:10px 14px;border-radius:10px;margin-bottom:8px;font-weight:500}
 .empty,.note{color:#6a5a8c;font-size:.93rem}
 .pay{background:var(--lilac);border-left:6px solid var(--gold);padding:12px 14px;border-radius:10px;font-weight:500;white-space:pre-line}
-.payment-methods{display:grid;gap:12px;margin-top:12px}
-.method{background:#fff;border-radius:14px;padding:14px;border-left:6px solid var(--violet)}
-.method.maya{border-color:#17C964}
-.method.mari{border-color:var(--rose)}
-.method.gcash{border-color:#1E6BFF}
-.method h3{font-size:1rem;margin-bottom:8px;color:var(--violet)}
-.method dl{display:grid;gap:4px;margin-bottom:10px}
-.method dt{font-weight:700;color:#5d4f7e}
-.method dd{margin-bottom:6px}
-.copy{border:2px solid var(--violet);background:transparent;color:var(--violet);font:inherit;font-weight:700;padding:6px 14px;border-radius:999px;cursor:pointer}
-.copy:hover{background:var(--violet);color:#fff}
 .msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:.93rem;display:none}
 .msg.err{display:block;background:#ffe3ea;color:#8a1236}
 .msg.ok{display:block;background:#e3f7e8;color:#145a2a}
@@ -90,10 +79,8 @@ ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:
   </div>
 
   <div class="sec">
-    <h2>Payment Details</h2>
-    <div id="payment-container" class="payment-methods">
-      <p>Loading payment details...</p>
-    </div>
+    <h2>Payment Terms</h2>
+    <div class="pay" id="pay">Loading...</div>
     <p class="note" style="margin-top:8px">Payment details are updated by Queen of Art after your payment is confirmed.</p>
   </div>
 
@@ -103,7 +90,6 @@ ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
@@ -113,189 +99,106 @@ const firebaseConfig = {
   messagingSenderId: "681441268668",
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore();
+  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+const $ = id => document.getElementById(id);
+const say = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
+const DEFAULT_PAY = 'No payment recorded yet';
+let ref = null;
+const titles = {};
 
-// Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// --- LOG OUT FIXED ---
-document.getElementById('logout').addEventListener('click', async function(){
-  try {
-    await auth.signOut();
-    window.location.href = 'index.html'; // Redirect after logout
-  } catch (err) {
-    showMsg('Error signing out: ' + err.message, 'err');
-  }
-});
-
-function showMsg(text, type){
-  const el = document.getElementById('msg');
-  el.textContent = text;
-  el.className = 'msg ' + type;
-  if (type === 'ok') setTimeout(() => { el.className = 'msg'; }, 3000);
+function showPhoto(src){
+  const box = $('photoBox');
+  box.textContent = '';
+  if (src) { const i = new Image(); i.src = src; i.alt = 'Your 2x2 ID photo'; box.appendChild(i); }
+  else box.textContent = 'No photo yet';
 }
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }
-
-// --- AUTH STATE & PROFILE LOAD ---
-auth.onAuthStateChanged(async function(user){
-  if (!user) {
-    // Not signed in — redirect to login
-    window.location.href = 'index.html';
-    return;
-  }
-
-  // User is signed in — load profile data
-  document.getElementById('email').textContent = user.email;
-
-  try {
-    // Load user profile from Firestore
-    const userRef = db.collection('users').doc(user.uid);
-    const userSnap = await userRef.get();
-
-    if (userSnap.exists) {
-      const data = userSnap.data();
-      document.getElementById('fullName').value = data.fullName || '';
-      
-      // Display courses
-      const coursesList = document.getElementById('courses');
-      const noCourses = document.getElementById('noCourses');
-      coursesList.innerHTML = '';
-      
-      if (data.courses && Object.keys(data.courses).length > 0) {
-        noCourses.style.display = 'none';
-        for (const [id, name] of Object.entries(data.courses)) {
-          coursesList.innerHTML += `<li><strong>${esc(name)}</strong> (${esc(id)})</li>`;
-        }
-      } else {
-        noCourses.style.display = 'block';
-      }
-
-      // Display photo
-      if (data.photo) {
-        document.getElementById('photoBox').innerHTML = `<img src="${data.photo}" alt="Profile photo">`;
-      }
-    }
-
-    // Load payment details
-    const paySnap = await db.collection('settings').doc('payment').get();
-    const payContainer = document.getElementById('payment-container');
-    
-    if (paySnap.exists) {
-      const p = paySnap.data();
-      payContainer.innerHTML = `
-        <div class="method">
-          <h3>Bank Transfer — ${esc(p.bankName)}</h3>
-          <dl>
-            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
-            <dt>Account Number</dt><dd id="bankNo">${esc(p.accountNumber)}</dd>
-            <dt>Bank</dt><dd>${esc(p.bankName)}</dd>
-          </dl>
-          <button class="copy" data-target="bankNo">Copy Number</button>
-        </div>
-        <div class="method gcash">
-          <h3>GCash</h3>
-          <dl>
-            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
-            <dt>Number</dt><dd id="gcashNo">${esc(p.gcashNumber)}</dd>
-          </dl>
-          <button class="copy" data-target="gcashNo">Copy Number</button>
-        </div>
-        <div class="method maya">
-          <h3>Maya</h3>
-          <dl>
-            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
-            <dt>Number</dt><dd id="mayaNo">${esc(p.mayaNumber)}</dd>
-          </dl>
-          <button class="copy" data-target="mayaNo">Copy Number</button>
-        </div>
-        <div class="method mari">
-          <h3>MariBank</h3>
-          <dl>
-            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
-            <dt>Number</dt><dd id="mariNo">${esc(p.mariNumber)}</dd>
-          </dl>
-          <button class="copy" data-target="mariNo">Copy Number</button>
-        </div>
-      `;
-    } else {
-      payContainer.innerHTML = '<p>Payment details not available.</p>';
-    }
-
-  } catch (err) {
-    console.error('Error loading profile:', err);
-    showMsg('Could not load profile: ' + err.message, 'err');
-  }
-});
-
-// --- Save Name ---
-document.getElementById('saveName').addEventListener('click', async function(){
-  const user = auth.currentUser;
-  if (!user) return showMsg('Please sign in first', 'err');
-  
-  const name = document.getElementById('fullName').value.trim();
-  if (!name) return showMsg('Please enter your name', 'err');
-
-  try {
-    await db.collection('users').doc(user.uid).set({
-      fullName: name,
-      email: user.email
-    }, { merge: true });
-    showMsg('Name saved!', 'ok');
-  } catch (err) {
-    showMsg('Error saving: ' + err.message, 'err');
-  }
-});
-
-// --- Photo Upload ---
-document.getElementById('pick').addEventListener('click', () => {
-  document.getElementById('file').click();
-});
-
-document.getElementById('file').addEventListener('change', async function(e){
-  const file = e.target.files[0];
-  if (!file) return;
-  
-  if (file.size > 200000) {
-    return showMsg('Photo too large — max 200KB', 'err');
-  }
-
-  const reader = new FileReader();
-  reader.onload = async function(event){
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    try {
-      await db.collection('users').doc(user.uid).set({
-        photo: event.target.result
-      }, { merge: true });
-      document.getElementById('photoBox').innerHTML = `<img src="${event.target.result}" alt="Profile photo">`;
-      showMsg('Photo updated!', 'ok');
-    } catch (err) {
-      showMsg('Error saving photo: ' + err.message, 'err');
-    }
-  };
-  reader.readAsDataURL(file);
-});
-
-// --- Copy Buttons ---
-document.addEventListener('click', function(e){
-  const btn = e.target.closest('.copy');
-  if (!btn) return;
-  const target = document.getElementById(btn.dataset.target);
-  if (!target) return;
-  
-  const text = target.textContent.trim();
-  navigator.clipboard.writeText(text).then(() => {
-    const original = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = original; }, 1600);
+function render(d){
+  $('fullName').value = d.fullName || '';
+  showPhoto(d.photo);
+  const list = $('courses'); list.innerHTML = '';
+  (d.courses || []).forEach(c => {
+    const li = document.createElement('li');
+    if (titles[c]) { const a = document.createElement('a'); a.href = 'course.html?id=' + encodeURIComponent(c); a.textContent = titles[c]; a.style.color = 'inherit'; li.appendChild(a); }
+    else li.textContent = c;
+    list.appendChild(li);
   });
-});
-</script>
+  $('noCourses').classList.toggle('hide', (d.courses || []).length > 0);
+  $('pay').textContent = d.payment || DEFAULT_PAY;
+}
 
+auth.onAuthStateChanged(async u => {
+  if (!u) { location.href = 'register.html'; return; }
+  $('email').textContent = u.email;
+  ref = db.collection('users').doc(u.uid);
+  try {
+    let snap = await ref.get();
+    if (!snap.exists) {
+      await ref.set({ fullName: u.displayName || '', photo: '', courses: [], payment: DEFAULT_PAY, email: u.email });
+      snap = await ref.get();
+    }
+    try { const cs = await db.collection('catalog').where('published', '==', true).get(); cs.forEach(x => titles[x.id] = x.data().title); } catch (e) {}
+    const data = snap.data();
+    if (!data.email) ref.update({ email: u.email }).catch(() => {});
+    render(data);
+  } catch (e) {
+    say('Could not load your profile. Make sure Firestore is set up (see the setup steps) and try again.');
+  }
+});
+
+// Photo: crop to a centered square, shrink to 400x400, save as a small JPEG
+function squarePhoto(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(img.width, img.height), c = document.createElement('canvas');
+      c.width = c.height = 400;
+      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 400, 400);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => rej(new Error('bad image'));
+    img.src = url;
+  });
+}
+
+$('pick').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f || !ref) return;
+  if (!f.type.startsWith('image/')) return say('Please choose an image file.');
+  $('pick').disabled = true;
+  try {
+    const data = await squarePhoto(f);
+    await ref.update({ photo: data });
+    showPhoto(data);
+    say('Photo saved.', true);
+  } catch (err) {
+    say(err && err.code === 'permission-denied'
+      ? 'The photo could not be saved because Firestore blocked it. Publish the latest Firestore rules in Firebase, then try again.'
+      : 'Could not save the photo. Try a different image.');
+  }
+  $('pick').disabled = false; e.target.value = '';
+};
+
+$('saveName').onclick = async () => {
+  const name = $('fullName').value.trim();
+  if (!name) return say('Enter your full name.');
+  $('saveName').disabled = true;
+  try {
+    await ref.update({ fullName: name });
+    await auth.currentUser.updateProfile({ displayName: name });
+    say('Name saved.', true);
+  } catch (err) {
+    say(err && err.code === 'permission-denied'
+      ? 'Your name could not be saved because Firestore blocked it. Publish the latest Firestore rules in Firebase, then try again.'
+      : 'Could not save your name. Try again.');
+  }
+  $('saveName').disabled = false;
+};
+
+$('logout').onclick = async () => { await auth.signOut(); location.href = 'index.html'; };
+</script>
 </body>
 </html>
