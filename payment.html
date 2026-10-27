@@ -88,9 +88,9 @@ footer a{color:#cfc6e6;margin-right:14px}
       <h2>What you can pay for</h2>
       <p class="lead">Choose one plan, then pay the exact amount using any method below.</p>
       <div class="plans">
-        <div class="plan"><b>Per module</b><span class="amt">₱99</span><small>per module</small></div>
-        <div class="plan"><b>Course bundle</b><span class="amt">₱399</span><small>per full course (5 to 6 modules)</small></div>
-        <div class="plan"><b>Expert</b><span class="amt">₱899</span><small>per month, or ₱2,999 one-time (launch offer)</small></div>
+        <div class="plan"><b>Career Starter Templates</b><span class="amt">₱99</span><small>per template</small></div>
+        <div class="plan"><b>Skill-Based Learning Modules</b><span class="amt">₱99-₱299</span><small>per module</small></div>
+        <div class="plan"><b>Certification Prep Tracks</b><span class="amt">₱299-₱999</span><small>per track</small></div>
       </div>
     </div>
   </section>
@@ -99,46 +99,9 @@ footer a{color:#cfc6e6;margin-right:14px}
     <div class="wrap">
       <h2>Where to send your payment</h2>
       <p class="lead">Send the exact amount to one of these accounts. Check the account name before you confirm.</p>
-      <div class="grid">
-
-        <article class="method">
-          <h3>Bank transfer</h3>
-          <dl>
-            <dt>Bank</dt><dd><span class="fill">OFBank</span></dd>
-            <dt>Account name</dt><dd><span class="fill">Almira Bagro</span></dd>
-            <dt>Account number</dt><dd id="bankNo"><span class="fill">6005463210</span></dd>
-          </dl>
-          <button class="copy" type="button" data-target="bankNo">Copy account number</button>
-        </article>
-
-        <article class="method maya">
-          <h3>Maya</h3>
-          <dl>
-            <dt>Account name</dt><dd><span class="fill">Almira Bagro</span></dd>
-            <dt>Mobile number</dt><dd id="mayaNo"><span class="fill">09774673966</span></dd>
-          </dl>
-          <button class="copy" type="button" data-target="mayaNo">Copy number</button>
-        </article>
-
-        <article class="method mari">
-          <h3>MariBank</h3>
-          <dl>
-            <dt>Account name</dt><dd><span class="fill">Almira Bagro</span></dd>
-            <dt>Account number</dt><dd id="mariNo"><span class="fill">1234 9509 361</span></dd>
-          </dl>
-          <button class="copy" type="button" data-target="mariNo">Copy account number</button>
-        </article>
-
-        <article class="method gcash">
-          <h3>GCash</h3>
-          <dl>
-            <dt>Account name</dt><dd><span class="fill">Almira Bagro</span></dd>
-            <dt>Mobile number</dt><dd id="gcashNo"><span class="fill">09774673966</span></dd>
-          </dl>
-          <button class="copy" type="button" data-target="gcashNo">Copy number</button>
-        </article>
-
-      </div>
+      <div class="grid" id="payment-details">
+  <p>Loading payment details…</p>
+</div>
     </div>
   </section>
 
@@ -177,13 +140,61 @@ footer a{color:#cfc6e6;margin-right:14px}
   <div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="index.html">Home</a><a href="profile.html">My profile</a><a href="privacy.html">Privacy Policy</a></div>
 </footer>
 
-<script>
-document.querySelectorAll('.copy').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    var text = document.getElementById(btn.dataset.target).textContent.trim();
-    var old = btn.textContent;
-    function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = old; }, 1600); }
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Copy this config from your profile.html (or wherever you set up Firebase)
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  appId: "..."
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const box = document.getElementById("payment-details");
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function card(cls, title, rows, id, btnText){
+  return `<article class="method ${cls}">
+    <h3>${title}</h3>
+    <dl>${rows.map(r => `<dt>${r[0]}</dt><dd>${r[2] ? `<span id="${id}">${esc(r[1])}</span>` : esc(r[1])}</dd>`).join("")}</dl>
+    <button class="copy" type="button" data-target="${id}">${btnText}</button>
+  </article>`;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    box.innerHTML = '<p>Please <a href="index.html">sign in</a> to see the payment instructions.</p>';
+    return;
+  }
+  try {
+    const snap = await getDoc(doc(db, "settings", "payment"));
+    if (!snap.exists()) { box.textContent = "Payment details are not available yet."; return; }
+    const p = snap.data();
+    box.innerHTML =
+      card("", "Bank transfer", [["Bank", p.bankName], ["Account name", p.accountName], ["Account number", p.accountNumber, true]], "bankNo", "Copy account number") +
+      card("maya", "Maya", [["Account name", p.accountName], ["Mobile number", p.mayaNumber, true]], "mayaNo", "Copy number") +
+      card("mari", "MariBank", [["Account name", p.accountName], ["Account number", p.mariNumber, true]], "mariNo", "Copy account number") +
+      card("gcash", "GCash", [["Account name", p.accountName], ["Mobile number", p.gcashNumber, true]], "gcashNo", "Copy number");
+  } catch (e) {
+    box.textContent = "Could not load payment details. Please try again.";
+  }
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".copy");
+  if (!btn) return;
+  const text = document.getElementById(btn.dataset.target).textContent.trim();
+  const old = btn.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = "Copied";
+    setTimeout(() => btn.textContent = old, 1600);
   });
 });
 </script>
