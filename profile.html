@@ -101,104 +101,47 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.firestore();
-  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-const $ = id => document.getElementById(id);
-const say = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
-const DEFAULT_PAY = 'No payment recorded yet';
-let ref = null;
-const titles = {};
+const box = document.getElementById('payment-details');
 
-function showPhoto(src){
-  const box = $('photoBox');
-  box.textContent = '';
-  if (src) { const i = new Image(); i.src = src; i.alt = 'Your 2x2 ID photo'; box.appendChild(i); }
-  else box.textContent = 'No photo yet';
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+function card(cls, title, rows, id, btnText){
+  var dl = rows.map(function(r){
+    return '<dt>' + r[0] + '</dt><dd>' + (r[2] ? '<span id="' + id + '">' + esc(r[1]) + '</span>' : esc(r[1])) + '</dd>';
+  }).join('');
+  return '<article class="method ' + cls + '"><h3>' + title + '</h3><dl>' + dl + '</dl>' +
+         '<button class="copy" type="button" data-target="' + id + '">' + btnText + '</button></article>';
 }
 
-function render(d){
-  $('fullName').value = d.fullName || '';
-  showPhoto(d.photo);
-  const list = $('courses'); list.innerHTML = '';
-  (d.courses || []).forEach(c => {
-    const li = document.createElement('li');
-    if (titles[c]) { const a = document.createElement('a'); a.href = 'course.html?id=' + encodeURIComponent(c); a.textContent = titles[c]; a.style.color = 'inherit'; li.appendChild(a); }
-    else li.textContent = c;
-    list.appendChild(li);
-  });
-  $('noCourses').classList.toggle('hide', (d.courses || []).length > 0);
-  $('pay').textContent = d.payment || DEFAULT_PAY;
-}
-
-auth.onAuthStateChanged(async u => {
-  if (!u) { location.href = 'register.html'; return; }
-  $('email').textContent = u.email;
-  ref = db.collection('users').doc(u.uid);
+auth.onAuthStateChanged(async function(user){
+  if (!user) {
+    box.innerHTML = '<p>Please <a href="register.html">sign in</a> to see the payment instructions.</p>';
+    return;
+  }
   try {
-    let snap = await ref.get();
-    if (!snap.exists) {
-      await ref.set({ fullName: u.displayName || '', photo: '', courses: [], payment: DEFAULT_PAY, email: u.email });
-      snap = await ref.get();
-    }
-    try { const cs = await db.collection('catalog').where('published', '==', true).get(); cs.forEach(x => titles[x.id] = x.data().title); } catch (e) {}
-    const data = snap.data();
-    if (!data.email) ref.update({ email: u.email }).catch(() => {});
-    render(data);
+    var snap = await db.collection('settings').doc('payment').get();
+    if (!snap.exists) { box.textContent = 'Payment details are not available yet.'; return; }
+    var p = snap.data();
+    box.innerHTML =
+      card('', 'Bank transfer', [['Bank', p.bankName], ['Account name', p.accountName], ['Account number', p.accountNumber, true]], 'bankNo', 'Copy account number') +
+      card('maya', 'Maya', [['Account name', p.accountName], ['Mobile number', p.mayaNumber, true]], 'mayaNo', 'Copy number') +
+      card('mari', 'MariBank', [['Account name', p.accountName], ['Account number', p.mariNumber, true]], 'mariNo', 'Copy account number') +
+      card('gcash', 'GCash', [['Account name', p.accountName], ['Mobile number', p.gcashNumber, true]], 'gcashNo', 'Copy number');
   } catch (e) {
-    say('Could not load your profile. Make sure Firestore is set up (see the setup steps) and try again.');
+    box.textContent = 'Could not load payment details. Please try again.';
   }
 });
 
-// Photo: crop to a centered square, shrink to 400x400, save as a small JPEG
-function squarePhoto(file){
-  return new Promise((res, rej) => {
-    const img = new Image(), url = URL.createObjectURL(file);
-    img.onload = () => {
-      const s = Math.min(img.width, img.height), c = document.createElement('canvas');
-      c.width = c.height = 400;
-      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 400, 400);
-      URL.revokeObjectURL(url);
-      res(c.toDataURL('image/jpeg', 0.82));
-    };
-    img.onerror = () => rej(new Error('bad image'));
-    img.src = url;
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.copy');
+  if (!btn) return;
+  var text = document.getElementById(btn.dataset.target).textContent.trim();
+  var old = btn.textContent;
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent = 'Copied';
+    setTimeout(function(){ btn.textContent = old; }, 1600);
   });
-}
-
-$('pick').onclick = () => $('file').click();
-$('file').onchange = async e => {
-  const f = e.target.files[0]; if (!f || !ref) return;
-  if (!f.type.startsWith('image/')) return say('Please choose an image file.');
-  $('pick').disabled = true;
-  try {
-    const data = await squarePhoto(f);
-    await ref.update({ photo: data });
-    showPhoto(data);
-    say('Photo saved.', true);
-  } catch (err) {
-    say(err && err.code === 'permission-denied'
-      ? 'The photo could not be saved because Firestore blocked it. Publish the latest Firestore rules in Firebase, then try again.'
-      : 'Could not save the photo. Try a different image.');
-  }
-  $('pick').disabled = false; e.target.value = '';
-};
-
-$('saveName').onclick = async () => {
-  const name = $('fullName').value.trim();
-  if (!name) return say('Enter your full name.');
-  $('saveName').disabled = true;
-  try {
-    await ref.update({ fullName: name });
-    await auth.currentUser.updateProfile({ displayName: name });
-    say('Name saved.', true);
-  } catch (err) {
-    say(err && err.code === 'permission-denied'
-      ? 'Your name could not be saved because Firestore blocked it. Publish the latest Firestore rules in Firebase, then try again.'
-      : 'Could not save your name. Try again.');
-  }
-  $('saveName').disabled = false;
-};
-
-$('logout').onclick = async () => { await auth.signOut(); location.href = 'index.html'; };
+});
 </script>
 </body>
 </html>
