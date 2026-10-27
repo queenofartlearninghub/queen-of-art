@@ -35,7 +35,6 @@ section{padding:54px 0}
 .plan small{display:block;color:#5d4f7e}
 
 /* payment accounts display */
-.methods{background:var(--lilac)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:20px;margin-top:24px}
 .method{background:#fff;border-radius:22px;padding:26px;border-left:10px solid var(--violet)}
 .method.bank{border-color:var(--violet)}
@@ -98,7 +97,7 @@ footer a{color:#cfc6e6;margin-right:14px}
       <h2>Where to send your payment</h2>
       <p>Send the exact amount to one of these accounts. Check the account name before you confirm.</p>
 
-      <!-- ✅ Container — details will load here after sign-in -->
+      <!-- Payment details load here after sign-in -->
       <div id="payment-accounts" style="margin-top: 1rem;">
         <p>Please sign in to see the payment instructions.</p>
       </div>
@@ -140,28 +139,27 @@ footer a{color:#cfc6e6;margin-right:14px}
   <div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="index.html">Home</a><a href="profile.html">My profile</a><a href="privacy.html">Privacy Policy</a></div>
 </footer>
 
-<!-- 🔑 ADD YOUR FIREBASE CONFIG HERE (copy from your Firebase Console → Project Settings) -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-  // ===== REPLACE THIS WITH YOUR ACTUAL FIREBASE CONFIG =====
+  // Your Firebase Config
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
+    authDomain: "queen-of-art.firebaseapp.com",
+    projectId: "queen-of-art",
+    storageBucket: "queen-of-art.firebasestorage.app",
+    messagingSenderId: "681441268668",
+    appId: "1:681441268668:web:ef7e01b245bb96995291b9"
   };
 
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  // ===========================================================
 
-  // Check auth state and load payment details
+  // Check auth and load payment details
   firebase.auth().onAuthStateChanged(user => {
     const container = document.getElementById('payment-accounts');
     
