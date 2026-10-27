@@ -33,6 +33,17 @@ ul.courses{list-style:none}
 ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:10px 14px;border-radius:10px;margin-bottom:8px;font-weight:500}
 .empty,.note{color:#6a5a8c;font-size:.93rem}
 .pay{background:var(--lilac);border-left:6px solid var(--gold);padding:12px 14px;border-radius:10px;font-weight:500;white-space:pre-line}
+.payment-methods{display:grid;gap:12px;margin-top:12px}
+.method{background:#fff;border-radius:14px;padding:14px;border-left:6px solid var(--violet)}
+.method.maya{border-color:#17C964}
+.method.mari{border-color:var(--rose)}
+.method.gcash{border-color:#1E6BFF}
+.method h3{font-size:1rem;margin-bottom:8px;color:var(--violet)}
+.method dl{display:grid;gap:4px;margin-bottom:10px}
+.method dt{font-weight:700;color:#5d4f7e}
+.method dd{margin-bottom:6px}
+.copy{border:2px solid var(--violet);background:transparent;color:var(--violet);font:inherit;font-weight:700;padding:6px 14px;border-radius:999px;cursor:pointer}
+.copy:hover{background:var(--violet);color:#fff}
 .msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:.93rem;display:none}
 .msg.err{display:block;background:#ffe3ea;color:#8a1236}
 .msg.ok{display:block;background:#e3f7e8;color:#145a2a}
@@ -79,8 +90,10 @@ ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:
   </div>
 
   <div class="sec">
-    <h2>Payment Terms</h2>
-    <div class="pay" id="pay">Loading...</div>
+    <h2>Payment Details</h2>
+    <div id="payment-container" class="payment-methods">
+      <p>Loading payment details...</p>
+    </div>
     <p class="note" style="margin-top:8px">Payment details are updated by Queen of Art after your payment is confirmed.</p>
   </div>
 
@@ -90,6 +103,7 @@ ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
@@ -99,49 +113,189 @@ const firebaseConfig = {
   messagingSenderId: "681441268668",
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(), db = firebase.firestore();
-const box = document.getElementById('payment-details');
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-
-function card(cls, title, rows, id, btnText){
-  var dl = rows.map(function(r){
-    return '<dt>' + r[0] + '</dt><dd>' + (r[2] ? '<span id="' + id + '">' + esc(r[1]) + '</span>' : esc(r[1])) + '</dd>';
-  }).join('');
-  return '<article class="method ' + cls + '"><h3>' + title + '</h3><dl>' + dl + '</dl>' +
-         '<button class="copy" type="button" data-target="' + id + '">' + btnText + '</button></article>';
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-auth.onAuthStateChanged(async function(user){
-  if (!user) {
-    box.innerHTML = '<p>Please <a href="register.html">sign in</a> to see the payment instructions.</p>';
-    return;
-  }
+// --- LOG OUT FIXED ---
+document.getElementById('logout').addEventListener('click', async function(){
   try {
-    var snap = await db.collection('settings').doc('payment').get();
-    if (!snap.exists) { box.textContent = 'Payment details are not available yet.'; return; }
-    var p = snap.data();
-    box.innerHTML =
-      card('', 'Bank transfer', [['Bank', p.bankName], ['Account name', p.accountName], ['Account number', p.accountNumber, true]], 'bankNo', 'Copy account number') +
-      card('maya', 'Maya', [['Account name', p.accountName], ['Mobile number', p.mayaNumber, true]], 'mayaNo', 'Copy number') +
-      card('mari', 'MariBank', [['Account name', p.accountName], ['Account number', p.mariNumber, true]], 'mariNo', 'Copy account number') +
-      card('gcash', 'GCash', [['Account name', p.accountName], ['Mobile number', p.gcashNumber, true]], 'gcashNo', 'Copy number');
-  } catch (e) {
-    box.textContent = 'Could not load payment details. Please try again.';
+    await auth.signOut();
+    window.location.href = 'index.html'; // Redirect after logout
+  } catch (err) {
+    showMsg('Error signing out: ' + err.message, 'err');
   }
 });
 
+function showMsg(text, type){
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+  if (type === 'ok') setTimeout(() => { el.className = 'msg'; }, 3000);
+}
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }
+
+// --- AUTH STATE & PROFILE LOAD ---
+auth.onAuthStateChanged(async function(user){
+  if (!user) {
+    // Not signed in — redirect to login
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // User is signed in — load profile data
+  document.getElementById('email').textContent = user.email;
+
+  try {
+    // Load user profile from Firestore
+    const userRef = db.collection('users').doc(user.uid);
+    const userSnap = await userRef.get();
+
+    if (userSnap.exists) {
+      const data = userSnap.data();
+      document.getElementById('fullName').value = data.fullName || '';
+      
+      // Display courses
+      const coursesList = document.getElementById('courses');
+      const noCourses = document.getElementById('noCourses');
+      coursesList.innerHTML = '';
+      
+      if (data.courses && Object.keys(data.courses).length > 0) {
+        noCourses.style.display = 'none';
+        for (const [id, name] of Object.entries(data.courses)) {
+          coursesList.innerHTML += `<li><strong>${esc(name)}</strong> (${esc(id)})</li>`;
+        }
+      } else {
+        noCourses.style.display = 'block';
+      }
+
+      // Display photo
+      if (data.photo) {
+        document.getElementById('photoBox').innerHTML = `<img src="${data.photo}" alt="Profile photo">`;
+      }
+    }
+
+    // Load payment details
+    const paySnap = await db.collection('settings').doc('payment').get();
+    const payContainer = document.getElementById('payment-container');
+    
+    if (paySnap.exists) {
+      const p = paySnap.data();
+      payContainer.innerHTML = `
+        <div class="method">
+          <h3>Bank Transfer — ${esc(p.bankName)}</h3>
+          <dl>
+            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
+            <dt>Account Number</dt><dd id="bankNo">${esc(p.accountNumber)}</dd>
+            <dt>Bank</dt><dd>${esc(p.bankName)}</dd>
+          </dl>
+          <button class="copy" data-target="bankNo">Copy Number</button>
+        </div>
+        <div class="method gcash">
+          <h3>GCash</h3>
+          <dl>
+            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
+            <dt>Number</dt><dd id="gcashNo">${esc(p.gcashNumber)}</dd>
+          </dl>
+          <button class="copy" data-target="gcashNo">Copy Number</button>
+        </div>
+        <div class="method maya">
+          <h3>Maya</h3>
+          <dl>
+            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
+            <dt>Number</dt><dd id="mayaNo">${esc(p.mayaNumber)}</dd>
+          </dl>
+          <button class="copy" data-target="mayaNo">Copy Number</button>
+        </div>
+        <div class="method mari">
+          <h3>MariBank</h3>
+          <dl>
+            <dt>Account Name</dt><dd>${esc(p.accountName)}</dd>
+            <dt>Number</dt><dd id="mariNo">${esc(p.mariNumber)}</dd>
+          </dl>
+          <button class="copy" data-target="mariNo">Copy Number</button>
+        </div>
+      `;
+    } else {
+      payContainer.innerHTML = '<p>Payment details not available.</p>';
+    }
+
+  } catch (err) {
+    console.error('Error loading profile:', err);
+    showMsg('Could not load profile: ' + err.message, 'err');
+  }
+});
+
+// --- Save Name ---
+document.getElementById('saveName').addEventListener('click', async function(){
+  const user = auth.currentUser;
+  if (!user) return showMsg('Please sign in first', 'err');
+  
+  const name = document.getElementById('fullName').value.trim();
+  if (!name) return showMsg('Please enter your name', 'err');
+
+  try {
+    await db.collection('users').doc(user.uid).set({
+      fullName: name,
+      email: user.email
+    }, { merge: true });
+    showMsg('Name saved!', 'ok');
+  } catch (err) {
+    showMsg('Error saving: ' + err.message, 'err');
+  }
+});
+
+// --- Photo Upload ---
+document.getElementById('pick').addEventListener('click', () => {
+  document.getElementById('file').click();
+});
+
+document.getElementById('file').addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  if (file.size > 200000) {
+    return showMsg('Photo too large — max 200KB', 'err');
+  }
+
+  const reader = new FileReader();
+  reader.onload = async function(event){
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+      await db.collection('users').doc(user.uid).set({
+        photo: event.target.result
+      }, { merge: true });
+      document.getElementById('photoBox').innerHTML = `<img src="${event.target.result}" alt="Profile photo">`;
+      showMsg('Photo updated!', 'ok');
+    } catch (err) {
+      showMsg('Error saving photo: ' + err.message, 'err');
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// --- Copy Buttons ---
 document.addEventListener('click', function(e){
-  var btn = e.target.closest('.copy');
+  const btn = e.target.closest('.copy');
   if (!btn) return;
-  var text = document.getElementById(btn.dataset.target).textContent.trim();
-  var old = btn.textContent;
-  navigator.clipboard.writeText(text).then(function(){
-    btn.textContent = 'Copied';
-    setTimeout(function(){ btn.textContent = old; }, 1600);
+  const target = document.getElementById(btn.dataset.target);
+  if (!target) return;
+  
+  const text = target.textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1600);
   });
 });
 </script>
+
 </body>
 </html>
