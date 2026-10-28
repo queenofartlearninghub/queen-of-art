@@ -447,5 +447,35 @@ function drawStudents() {
   });
 }
 </script>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script>
+  async function checkAdminAccess() {
+    const user = window.netlifyIdentity.currentUser();
+    
+    if (!user) {
+      // Not logged in → show login
+      window.netlifyIdentity.open();
+      return;
+    }
+
+    // Logged in → check for admin role
+    await user.refresh(); // Update user data
+    const roles = user.roles || [];
+    
+    if (!roles.includes('admin')) {
+      // Not admin → deny access
+      document.body.innerHTML = `
+        <div style="padding:3rem;text-align:center;font-family:sans-serif;">
+          <h1 style="color:#e74c3c;">Access Denied ❌</h1>
+          <p>Only administrators can view this page.</p>
+          <button onclick="window.netlifyIdentity.logout(); location.reload();">Log Out</button>
+        </div>`;
+    }
+    // If admin → page loads normally ✅
+  }
+
+  window.netlifyIdentity.on("init", checkAdminAccess);
+  window.netlifyIdentity.on("login", () => location.reload());
+</script>
 </body>
 </html>
