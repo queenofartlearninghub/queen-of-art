@@ -19,39 +19,46 @@
 
 <main class="wrap pad">
   <div class="search-wrap" style="margin-bottom:20px;">
-  <input
-    id="search"
-    type="text"
-    placeholder="Search courses..."
-    style="
-      width:100%;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid #ddd;
-      font-size:16px;
-    "
-  >
-</div>
+    <input
+      id="search"
+      type="text"
+      placeholder="Search courses..."
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid #ddd;font-size:16px;"
+    >
+  </div>
 
-<div class="chips" id="filters"></div>
+  <div class="chips" id="filters"></div>
   <div class="cards" id="grid"></div>
   <p class="note hide" id="empty">No courses are published yet. Please check back soon.</p>
   <div class="msg err hide" id="err"></div>
 </main>
 
-<footer class="mini"><div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="index.html">Home</a><a href="payment.html">Payment Terms</a><a href="privacy.html">Privacy Policy</a></div></footer>
+<footer class="mini">
+  <div class="wrap">
+    &copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp;
+    <a href="index.html">Home</a>
+    <a href="payment.html">Payment Terms</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </div>
+</footer>
 
+<!-- ✅ CORRECT ORDER: Identity FIRST → Firebase → app.js → page code LAST -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="app.js"></script>
+
 <script>
 (async () => {
   renderTopbar();
   const user = await authReady();
   let mine = [];
   if (user) {
-    try { const s = await db.collection('users').doc(user.uid).get(); mine = (s.data() || {}).courses || []; } catch (e) {}
+    try {
+      const s = await db.collection('users').doc(user.id || user.email).get();
+      mine = (s.data() || {}).courses || [];
+    } catch (e) {}
   }
 
   let list = [];
@@ -66,100 +73,59 @@
   list.sort((a, b) => (a.order || 0) - (b.order || 0));
   if (!list.length) { $('empty').classList.remove('hide'); return; }
 
- const categories = [
-  'All',
-  'Career Templates',
-  'Beginner ₱99',
-  'Intermediate ₱199',
-  'Advanced ₱299',
-  'Certification ₱499',
-  'Premium ₱999'
-];
+  const categories = [
+    'All', 'Career Templates', 'Beginner ₱99', 'Intermediate ₱199',
+    'Advanced ₱299', 'Certification ₱499', 'Premium ₱999'
+  ];
 
-let activeCategory = 'All';
-let searchTerm = '';
-  
+  let activeCategory = 'All';
+  let searchTerm = '';
 
- function draw() {
-
-  $('filters').innerHTML =
-    categories.map(cat => `
-      <button
-        type="button"
-        class="${cat === activeCategory ? 'on' : ''}"
-        data-cat="${cat}">
+  function draw() {
+    $('filters').innerHTML = categories.map(cat => `
+      <button type="button" class="${cat === activeCategory ? 'on' : ''}" data-cat="${cat}">
         ${cat}
       </button>
     `).join('');
 
-  $('filters')
-    .querySelectorAll('button')
-    .forEach(btn => {
-      btn.onclick = () => {
-        activeCategory = btn.dataset.cat;
-        draw();
-      };
+    $('filters').querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => { activeCategory = btn.dataset.cat; draw(); };
     });
 
-  const filtered = list.filter(course => {
+    const filtered = list.filter(course => {
+      const matchesCategory = activeCategory === 'All' || course.category === activeCategory;
+      const matchesSearch = !searchTerm ||
+        (course.title || '').toLowerCase().includes(searchTerm) ||
+        (course.summary || '').toLowerCase().includes(searchTerm);
+      return matchesCategory && matchesSearch;
+    });
 
-  const matchesCategory =
-    activeCategory === 'All' ||
-    course.category === activeCategory;
+    $('grid').innerHTML = filtered.map(c => {
+      const enrolled = mine.includes(c.id);
+      return `
+        <article class="card">
+          <div>
+            <span class="tag">${c.category || 'Learning Module'}</span>
+            ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}
+          </div>
+          <h3>${c.title}</h3>
+          <p>${c.summary || ''}</p>
+          ${c.price ? `<div class="price">${c.price}</div>` : ''}
+          <a class="btn" href="course.html?id=${encodeURIComponent(c.id)}">
+            ${enrolled ? 'Continue Learning' : 'View Course'}
+          </a>
+        </article>
+      `;
+    }).join('');
+  }
 
-  const matchesSearch =
-    !searchTerm ||
-    (course.title || '')
-      .toLowerCase()
-      .includes(searchTerm) ||
-
-    (course.summary || '')
-      .toLowerCase()
-      .includes(searchTerm);
-
-  return matchesCategory && matchesSearch;
-
-});
-
-  $('grid').innerHTML = filtered.map(c => {
-
-    const enrolled = mine.includes(c.id);
-
-    return `
-      <article class="card">
-        <div>
-          <span class="tag">${c.category || 'Learning Module'}</span>
-          ${enrolled ? '<span class="tag ok">Enrolled</span>' : ''}
-        </div>
-
-        <h3>${c.title}</h3>
-
-        <p>${c.summary || ''}</p>
-
-        ${c.price ? `<div class="price">${c.price}</div>` : ''}
-
-        <a class="btn"
-           href="course.html?id=${encodeURIComponent(c.id)}">
-          ${enrolled ? 'Continue Learning' : 'View Course'}
-        </a>
-      </article>
-    `;
-  }).join('');
-}
-const searchBox = $('search');
-
-if (searchBox) {
-  searchBox.addEventListener('input', e => {
+  $('search').addEventListener('input', e => {
     searchTerm = e.target.value.toLowerCase();
     draw();
   });
-}
 
-draw();
-
+  draw();
 })();
 </script>
 </body>
 </html>
-
- 
