@@ -163,7 +163,7 @@ async function loadProfile(user) {
   }
 }
 
-// Wait for Netlify Identity
+// ===== Netlify Identity Connection =====
 if (window.netlifyIdentity) {
   window.netlifyIdentity.on("init", user => user && loadProfile(user));
   window.netlifyIdentity.on("login", user => {
