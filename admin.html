@@ -146,36 +146,36 @@ function initApp() {
     return;
   }
 
-  // Get email — this is our backup check
-  const email = user.email || '';
-  
-  // Check roles first
-  let roles = user.roles || [];
-  
-  // If roles are empty but email matches → trust it and refresh
-  if (!roles.length && email === 'almirabagro12@gmail.com') {
-    user.refresh().then(() => {
-      const freshRoles = user.roles || [];
-      if (freshRoles.includes('admin') || user.email === 'almirabagro12@gmail.com') {
-        showAdminPanel();
-      } else {
-        $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity, then log out and back in.</div>';
-      }
-    }).catch(() => {
-      // If refresh fails → trust the email directly
-      if (email === 'almirabagro12@gmail.com') {
-        showAdminPanel();
-      }
-    });
+  // ✅ Quick check — no waiting!
+  const email = (user.email || '').trim().toLowerCase();
+  const adminEmail = 'almirabagro12@gmail.com'; // your admin email
+  const roles = user.roles || [];
+
+  // If email matches → show panel immediately
+  if (email === adminEmail || roles.includes('admin')) {
+    showAdminPanel();
     return;
   }
-  
-  // Standard check: either has admin role OR is your exact email
-  if (roles.includes('admin') || email === 'almirabagro12@gmail.com') {
-    showAdminPanel();
-  } else {
-    $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity → Identity tab → click your email → Roles → type "admin" → Add. Then log out and log back in.</div>';
+
+  // Backup: refresh roles once, then trust email
+  if (!roles.length && email === adminEmail) {
+    user.refresh()
+      .then(() => {
+        const freshRoles = user.roles || [];
+        if (freshRoles.includes('admin') || (user.email || '').trim().toLowerCase() === adminEmail) {
+          showAdminPanel();
+        } else {
+          $('gate').innerHTML = '<div class="note">Access denied.</div>';
+        }
+      })
+      .catch(() => {
+        // Network issue? Still let you in since email matches
+        showAdminPanel();
+      });
+    return;
   }
+
+  $('gate').innerHTML = '<div class="note">Access denied. Only the site administrator can view this page.</div>';
 }
 
 function showAdminPanel() {
