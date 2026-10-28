@@ -136,6 +136,7 @@ function fail(what, e) {
 function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
 // ===== Wait for Netlify Identity to fully load =====
+// ===== Wait for Netlify Identity to fully load =====
 function initApp() {
   renderTopbar();
   
@@ -144,28 +145,37 @@ function initApp() {
     $('gate').innerHTML = '<div class="note">This page is for the site admin only. <a href="javascript:netlifyIdentity.open()">Log in</a> with your admin account.</div>';
     return;
   }
+
+  // Get email — this is our backup check
+  const email = user.email || '';
   
-  // Ensure roles are loaded — refresh if missing
+  // Check roles first
   let roles = user.roles || [];
-  if (!roles.length) {
+  
+  // If roles are empty but email matches → trust it and refresh
+  if (!roles.length && email === 'almirabagro12@gmail.com') {
     user.refresh().then(() => {
-      // Re-check after refresh
       const freshRoles = user.roles || [];
-      if (!freshRoles.includes('admin')) {
-        $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity, then log out and back in.</div>';
+      if (freshRoles.includes('admin') || user.email === 'almirabagro12@gmail.com') {
+        showAdminPanel();
       } else {
+        $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity, then log out and back in.</div>';
+      }
+    }).catch(() => {
+      // If refresh fails → trust the email directly
+      if (email === 'almirabagro12@gmail.com') {
         showAdminPanel();
       }
     });
     return;
   }
   
-  if (!roles.includes('admin')) {
+  // Standard check: either has admin role OR is your exact email
+  if (roles.includes('admin') || email === 'almirabagro12@gmail.com') {
+    showAdminPanel();
+  } else {
     $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity → Identity tab → click your email → Roles → type "admin" → Add. Then log out and log back in.</div>';
-    return;
   }
-  
-  showAdminPanel();
 }
 
 function showAdminPanel() {
@@ -183,9 +193,13 @@ function showAdminPanel() {
 // Wait for Netlify Identity before running
 if (window.netlifyIdentity) {
   window.netlifyIdentity.on("init", initApp);
-  window.netlifyIdentity.on("login", () => window.location.reload());
+  window.netlifyIdentity.on("login", () => {
+    // Don't full reload — just re-check
+    setTimeout(initApp, 100);
+  });
+  window.netlifyIdentity.on("logout", () => window.location.reload());
   // If already initialized, run immediately
-  if (window.netlifyIdentity.currentUser() !== undefined) {
+  if (window.netlifyIdentity.currentUser() !== null) {
     initApp();
   }
 } else {
