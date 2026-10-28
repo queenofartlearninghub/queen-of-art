@@ -34,7 +34,7 @@ section{padding:80px 0}
 header{background:var(--violet-dark);color:var(--white);position:sticky;top:0;z-index:10}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 22px;max-width:1100px;margin:0 auto;flex-wrap:wrap}
 .logo{font-family:var(--head);font-weight:800;font-size:1.3rem;text-decoration:none}
-nav{display:flex;gap:22px;flex-wrap:wrap}
+nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
 nav a{text-decoration:none;font-weight:500;font-size:.95rem}
 nav a:hover{color:var(--marigold)}
 
@@ -84,29 +84,17 @@ nav a:hover{color:var(--marigold)}
 .plan.best .btn{background:var(--violet-dark);border-color:var(--violet-dark)}
 
 /* mentors */
-/*.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px}
-.person .pic{width:96px;height:96px;border-radius:50%;background:var(--violet);color:var(--marigold);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2rem;margin-bottom:14px}
-.person:nth-child(2) .pic{background:var(--rose);color:var(--white)}
-.person:nth-child(3) .pic{background:var(--marigold);color:var(--violet-dark)}
-.person h3{font-size:1.3rem}
-.person .role{color:#6a5a8c;font-weight:700;margin-bottom:8px}
-.person .pic{position:relative;overflow:hidden}
-.person .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-
-  /* ----- Mentors Section ----- */
 .mentors-section {
   padding: 60px 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
-
 .mentors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 40px;
   margin-top: 40px;
 }
-
 .mentor-card {
   text-align: center;
   padding: 30px 20px;
@@ -115,11 +103,9 @@ nav a:hover{color:var(--marigold)}
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   transition: transform 0.3s ease;
 }
-
 .mentor-card:hover {
   transform: translateY(-5px);
 }
-
 .mentor-avatar {
   width: 120px;
   height: 120px;
@@ -128,20 +114,17 @@ nav a:hover{color:var(--marigold)}
   margin-bottom: 20px;
   border: 3px solid #f0f0f0;
 }
-
 .mentor-name {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 6px;
   color: #1a1a2e;
 }
-
 .mentor-position {
   font-size: 0.95rem;
   color: #666;
   margin-bottom: 15px;
 }
-
 .mentor-bio {
   font-size: 0.9rem;
   line-height: 1.6;
@@ -176,7 +159,7 @@ nav a:hover{color:var(--marigold)}
   transition: background 0.3s ease;
 }
 
-/* ----- Modal Popup Styles ----- */
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -190,7 +173,6 @@ nav a:hover{color:var(--marigold)}
   z-index: 9999;
   padding: 20px;
 }
-
 .modal-content {
   background: white;
   border-radius: 16px;
@@ -201,7 +183,6 @@ nav a:hover{color:var(--marigold)}
   max-height: 90vh;
   overflow-y: auto;
 }
-
 .modal-close {
   position: absolute;
   top: 15px;
@@ -211,11 +192,9 @@ nav a:hover{color:var(--marigold)}
   color: #888;
   transition: color 0.2s;
 }
-
 .modal-close:hover {
   color: #111;
 }
-
 .modal-avatar {
   width: 100px;
   height: 100px;
@@ -223,34 +202,29 @@ nav a:hover{color:var(--marigold)}
   object-fit: cover;
   margin-bottom: 15px;
 }
-
 .modal-title {
   margin: 0 0 5px;
   font-size: 1.4rem;
   color: #1a1a2e;
 }
-
 .modal-subtitle {
   color: #555;
   margin-bottom: 20px;
 }
-
 .modal-section {
   margin-bottom: 16px;
 }
-
 .modal-label {
   font-weight: 600;
   color: #333;
   display: block;
   margin-bottom: 4px;
 }
-
 .modal-value {
   color: #555;
   line-height: 1.5;
 }
-  
+
 /* tools + contact + footer */
 .tools{background:var(--lilac)}
 .chips{display:flex;flex-wrap:wrap;gap:12px}
@@ -267,11 +241,13 @@ footer a:hover{color:var(--marigold)}
   .swatches{height:280px}
   section{padding:60px 0}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .btn{transition:none}
+}
 
 /* account menu */
 .hide{display:none!important}
-nav{align-items:center}
 .acct{position:relative}
 .acct>button{display:flex;align-items:center;gap:8px;background:transparent;border:2px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:4px 14px 4px 4px;font:inherit;font-weight:500;font-size:.95rem;cursor:pointer}
 .acct>button:hover{border-color:var(--marigold)}
@@ -298,10 +274,14 @@ nav{align-items:center}
       <a href="register.html" id="loginLink">Student login</a>
       <div class="acct hide" id="acct">
         <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
-          <span class="av" id="avatar">S</span><span id="acctName">Account</span>
+          <span class="av" id="avatar">S</span>
+          <span id="acctName">Account</span>
         </button>
         <div class="menu hide" id="acctMenu">
-          <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+          <div class="who">
+            <strong id="menuName"></strong>
+            <span id="menuEmail"></span>
+          </div>
           <a href="profile.html">My profile</a>
           <a href="payment.html">Payment Terms</a>
           <a href="privacy.html">Privacy Policy</a>
@@ -339,25 +319,41 @@ nav{align-items:center}
       <article class="mod">
         <div class="m">Module 01</div>
         <h3>Getting started</h3>
-        <ul><li>Intro to the Canva dashboard</li><li>How to use templates</li><li>Saving and exporting designs</li></ul>
+        <ul>
+          <li>Intro to the Canva dashboard</li>
+          <li>How to use templates</li>
+          <li>Saving and exporting designs</li>
+        </ul>
         <a href="#contact">Enroll now</a>
       </article>
       <article class="mod">
         <div class="m">Module 02</div>
         <h3>Design fundamentals</h3>
-        <ul><li>Color theory and choosing palettes</li><li>Typography basics and font pairing</li><li>Layout, spacing, and visual hierarchy</li></ul>
+        <ul>
+          <li>Color theory and choosing palettes</li>
+          <li>Typography basics and font pairing</li>
+          <li>Layout, spacing, and visual hierarchy</li>
+        </ul>
         <a href="#contact">Enroll now</a>
       </article>
       <article class="mod">
         <div class="m">Module 03</div>
         <h3>Branding &amp; templates</h3>
-        <ul><li>Setting up a brand kit (logo, colors, fonts)</li><li>Creating reusable custom templates</li><li>Keeping designs consistent across projects</li></ul>
+        <ul>
+          <li>Setting up a brand kit (logo, colors, fonts)</li>
+          <li>Creating reusable custom templates</li>
+          <li>Keeping designs consistent across projects</li>
+        </ul>
         <a href="#contact">Enroll now</a>
       </article>
       <article class="mod">
         <div class="m">Module 04</div>
         <h3>Real-world projects</h3>
-        <ul><li>Designing social media posts and stories</li><li>Resizing one design for multiple platforms</li><li>Preparing a small portfolio piece to show clients</li></ul>
+        <ul>
+          <li>Designing social media posts and stories</li>
+          <li>Resizing one design for multiple platforms</li>
+          <li>Preparing a small portfolio piece to show clients</li>
+        </ul>
         <a href="#contact">Enroll now</a>
       </article>
     </div>
@@ -369,10 +365,22 @@ nav{align-items:center}
     <h2>Why learn with Queen of Art</h2>
     <p class="lead">Start with one module or go all the way. Every course comes with a free certificate.</p>
     <div class="why">
-      <div><h3>Learn anywhere</h3><p>100% online and self-paced, so you study when it suits you.</p></div>
-      <div><h3>Free certificate</h3><p>Earn a certificate for every course you complete.</p></div>
-      <div><h3>Beginner-friendly</h3><p>No design experience required.</p></div>
-      <div><h3>Practical skills</h3><p>Real templates, real projects, real results.</p></div>
+      <div>
+        <h3>Learn anywhere</h3>
+        <p>100% online and self-paced, so you study when it suits you.</p>
+      </div>
+      <div>
+        <h3>Free certificate</h3>
+        <p>Earn a certificate for every course you complete.</p>
+      </div>
+      <div>
+        <h3>Beginner-friendly</h3>
+        <p>No design experience required.</p>
+      </div>
+      <div>
+        <h3>Practical skills</h3>
+        <p>Real templates, real projects, real results.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -381,9 +389,7 @@ nav{align-items:center}
   <div class="wrap">
     <h2>Learning & Resource Pricing</h2>
     <p class="lead">Choose the resource or certification track that matches your goals. All materials are downloadable, editable, and yours to keep.</p>
-
     <div class="plans">
-
       <div class="plan">
         <h3>Career Starter Templates</h3>
         <div class="price">₱99 <small>/ template</small></div>
@@ -405,266 +411,4 @@ nav{align-items:center}
         <ul>
           <li>Canva Design Fundamentals</li>
           <li>Graphic Design Basics</li>
-          <li>Branding & Visual Identity</li>
-          <li>Social Media Design</li>
-          <li>Portfolio Building</li>
-          <li>Freelancing & Client Acquisition</li>
-        </ul>
-        <p class="for">Learn practical, income-generating creative skills.</p>
-        <a class="btn" href="payment.html">Start Learning</a>
-      </div>
-
-      <div class="plan">
-        <h3>Certification Prep Tracks</h3>
-        <div class="price">₱299 - ₱999 <small>/ track</small></div>
-        <ul>
-          <li>Adobe Certified Professional (Photoshop)</li>
-          <li>Adobe Certified Professional (Illustrator)</li>
-          <li>HubSpot Inbound Marketing Certification</li>
-          <li>HubSpot Social Media Certification</li>
-          <li>Google Workspace Professional Certification</li>
-          <li>Trello Professional Certification</li>
-          <li>Asana Project Management Badge</li>
-          <li>ClickUp Productivity Badge</li>
-        </ul>
-        <p class="for">Prepare for in-demand certifications recognized by employers and clients.</p>
-        <a class="btn" href="payment.html">Enroll Now</a>
-      </div>
-      <div class="plan best">
-        <h3>Law of Education + Bookkeeping card </h3>
-        <div class="price">₱199 - ₱499 <small>/ module</small></div>
-        <ul>
-          <li>Basic Bookkeeping & Recording</li>
-          <li>Financial Statements Basics</li>
-          <li>Education Laws & Policies</li>
-          <li>Compliance for Schools</li>
-         <li>For learning purposes only, not legal advice.</li>
-        </ul>
-        <p class="for">Learn practical skills for school administration and small business.</p>
-        <a class="btn" href="payment.html">Start Course</a>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<section class="mentors-section" id="mentors">
-  <h2>Meet our mentors</h2>
-  <p>Dedicated mentors nurturing every artist.</p>
-
-  <div class="mentors-grid">
-    <!-- Coach Mira -->
-    <div class="mentor-card">
-      <img src="mira.jpg" alt="Coach Mira" class="mentor-avatar">
-      <h3 class="mentor-name">Coach Mira</h3>
-      <p class="mentor-position">Founder & Creative Director</p>
-      <p class="mentor-bio">Founder of Queen of Art. Mira teaches hands-on design in Canva and other tools, and shares real strategies for landing clients and building a freelance business.</p>
-      <button class="hire-btn" data-mentor="mira">Hire Me</button>
-    </div>
-
-    <!-- Coach Sarah -->
-    <div class="mentor-card">
-      <img src="sarah.jpg" alt="Coach Sarah" class="mentor-avatar">
-      <h3 class="mentor-name">Coach Sarah</h3>
-      <p class="mentor-position">Co-Founder, SEO Content & Lead Designer</p>
-      <p class="mentor-bio">Sarah combines SEO-optimized content with eye-catching design to help brands grow and stand out online.</p>
-      <button class="hire-btn" data-mentor="sarah">Hire Me</button>
-    </div>
-
-    <!-- Consultant Zen -->
-    <div class="mentor-card">
-      <img src="zen.jpg" alt="Consultant Zen" class="mentor-avatar">
-      <h3 class="mentor-name">Consultant Zen</h3>
-      <p class="mentor-position">Legal Consultant</p>
-      <p class="mentor-bio">Zen covers the legal side of design: copyright, contracts, and licensing, so designers can protect their work and their business.</p>
-      <button class="hire-btn" data-mentor="zen">Hire Me</button>
-    </div>
-  </div>
-</section>
-
-<!-- Modal Popup -->
-<div class="modal-overlay" id="hireModal">
-  <div class="modal-content">
-    <span class="modal-close">&times;</span>
-    <img id="modalAvatar" src="" alt="" class="modal-avatar">
-    <h3 class="modal-title" id="modalName"></h3>
-    <p class="modal-subtitle" id="modalPosition"></p>
-
-    <div class="modal-section">
-      <span class="modal-label">Summary</span>
-      <p class="modal-value" id="modalSummary"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Core Competences</span>
-      <p class="modal-value" id="modalSkills"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Education</span>
-      <p class="modal-value" id="modalEducation"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Email</span>
-      <p class="modal-value" id="modalEmail"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Contact Details</span>
-      <p class="modal-value" id="modalContact"></p>
-    </div>
-   <div class="modal-section" id="modalResumeWrap">
-  <span class="modal-label">Resume</span>
-  <a id="modalResume" class="mentor-resume-btn" download>⬇ Download Resume</a>
-</div>
-  </div>
-</div>
-
-<script>
-// Mentor detailed data — EDIT THESE WITH ACTUAL INFO
-const mentorData = {
-  mira: {
-    name: "Coach Mira",
-    position: "Founder/CEO & Creative Director",
-    avatar: "mira.jpg",
-    summary: "Founder of Queen of Art with years of experience in creative design and freelancing. Passionate about helping beginners turn creative skills into sustainable income.",
-    skills: "Canva Design, Graphic Design, Branding, Freelance Strategy, Client Acquisition",
-    education: "Bachelor of Science in Information Technology - ACLC College of Butuan; Master of Public Administration - Caraga State University",
-    email: "mira@queenofart.com",
-    contact: "+63 977 467 3966",
-    resume: "mira-resume.pdf"
-  },
-  sarah: {
-    name: "Coach Sarah",
-    position: "SEO Content & Lead Designer",
-    avatar: "sarah.jpg",
-    summary: "Bridging beautiful design with data-driven SEO strategies. Helping creators and brands build strong online presence that converts.",
-    skills: "SEO Content Design, Brand Identity, Social Media Graphics, Digital Marketing, Visual Storytelling",
-    education: "Bachelor of Science in Information Technology",
-    email: "sarah@queenofart.com",
-    contact: "+63 930 761 3364",
-    resume: "sarah-resume.pdf"
-  },
-  zen: {
-    name: "Consultant Zen",
-    position: "Legal Consultant",
-    avatar: "zen.jpg",
-    summary: "Specializes in intellectual property and business law for creative professionals. Dedicated to protecting designers' work and rights.",
-    skills: "Copyright Law, Contract Drafting, Licensing, Business Registration, IP Protection",
-    education: "Bachelor of Laws — [Father Saturnino Urios University]",
-    email: "zen@queenofart.com",
-    contact: "+63 965 783 9098",
-    resume: "zen-resume.pdf"
-  }
-};
-
-// Modal elements
-const modal = document.getElementById('hireModal');
-const closeBtn = document.querySelector('.modal-close');
-const hireButtons = document.querySelectorAll('.hire-btn');
-
-// Open modal
-hireButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.getAttribute('data-mentor');
-    const data = mentorData[id];
-    const wrap = document.getElementById("modalResumeWrap");
-    const link = document.getElementById("modalResume");
-    document.getElementById('modalName').textContent = data.name;
-    document.getElementById('modalPosition').textContent = data.position;
-    document.getElementById('modalAvatar').src = data.avatar;
-    document.getElementById('modalAvatar').alt = data.name;
-    document.getElementById('modalSummary').textContent = data.summary;
-    document.getElementById('modalSkills').textContent = data.skills;
-    document.getElementById('modalEducation').textContent = data.education;
-    document.getElementById('modalEmail').textContent = data.email;
-    document.getElementById('modalContact').textContent = data.contact;
-   if (data.resume) {
-  link.href = data.resume;
-  link.setAttribute("download", data.name.replace(/\s+/g, "-") + "-Resume.pdf");
-  wrap.style.display = "block";
-} else {
-  wrap.style.display = "none";
-}
-    modal.style.display = 'flex';
-  });
-});
-
-// Close modal
-closeBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-});
-
-// Click outside to close
-window.addEventListener('click', (e) => {
-  if (e.target === modal) {
-    modal.style.display = 'none';
-  }
-});
-  </script>
-
-<section class="tools" id="tools">
-  <div class="wrap">
-    <h2>Tools you'll master</h2>
-    <p class="lead">Learn the exact apps clients and employers expect you to know. Learn it here, use it everywhere.</p>
-    <div class="chips"><span>Canva</span><span>Adobe Photoshop</span><span>Adobe Illustrator</span><span>Claude</span><span>Discord</span><span>Trello</span><span>VistaSocial</span><span>Slack</span><span>Word</span><span>Excel</span><span>PDF</span></div>
-  </div>
-</section>
-
-<section class="contact" id="contact">
-  <div class="wrap">
-    <h2>Ready to start designing?</h2>
-    <p class="lead">Message us to enroll. Register now and get your first certificate free.</p>
-    <a class="btn" href="mailto:mira.graphicsfreelancer@gmail.com?subject=Enroll%20in%20Queen%20of%20Art">Email us to enroll</a>
-    <p style="margin-top:20px">Or call <a href="tel:+639774673966">+63 977 4673 966</a></p>
-  </div>
-</section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <div>&copy; 2026 Queen of Art Online Learning Courses</div>
-    <div>
-      <a href="payment.html">Payment Terms</a><a href="https://www.facebook.com/profile.php?id=61594094747305">Facebook</a><a href="https://www.instagram.com/queenofartacb?stkn=NGNnd3ZhYmhrc213">Instagram</a><a href="https://www.tiktok.com/@disenyocrafts?_r=1&_t=ZS-9AEc5LfsYbN">TikTok</a><a href="privacy.html">Privacy Policy</a>
-    </div>
-  </div>
-</footer>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
-  authDomain: "queen-of-art.firebaseapp.com",
-  projectId: "queen-of-art",
-  storageBucket: "queen-of-art.firebasestorage.app",
-  messagingSenderId: "681441268668",
-  appId: "1:681441268668:web:ef7e01b245bb96995291b9"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-  auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-const $ = id => document.getElementById(id);
-
-function closeMenu(){ $('acctMenu').classList.add('hide'); $('acctBtn').setAttribute('aria-expanded','false'); }
-$('acctBtn').onclick = e => {
-  e.stopPropagation();
-  const open = $('acctMenu').classList.toggle('hide') === false;
-  $('acctBtn').setAttribute('aria-expanded', open);
-};
-document.addEventListener('click', e => { if(!$('acct').contains(e.target)) closeMenu(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeMenu(); });
-$('navLogout').onclick = () => auth.signOut();
-
-auth.onAuthStateChanged(u => {
-  $('loginLink').classList.toggle('hide', !!u);
-  $('acct').classList.toggle('hide', !u);
-  closeMenu();
-  if(u){
-    const name = u.displayName || u.email.split('@')[0];
-    $('avatar').textContent = name.trim().charAt(0).toUpperCase();
-    $('acctName').textContent = name.trim().split(' ')[0];
-    $('menuName').textContent = name;
-    $('menuEmail').textContent = u.email;
-  }
-});
-</script>
-</body>
-</html>
+          <li
