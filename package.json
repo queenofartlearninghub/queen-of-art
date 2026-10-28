@@ -1,7 +1,0 @@
-   {
-     "name": "queen-of-art",
-     "private": true,
-     "dependencies": {
-       "firebase-admin": "^12.0.0"
-     }
-   }
