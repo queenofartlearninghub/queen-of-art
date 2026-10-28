@@ -45,11 +45,83 @@
   <div id="amsg" class="msg hide"></div>
 </main>
 
+<!-- ✅ Netlify Identity FIRST -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+<!-- Then Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="app.js"></script>
 <script>
+  // ===== MISSING HELPERS & FIREBASE INIT =====
+const $ = id => document.getElementById(id);
+const esc = t => (t == null ? '' : String(t)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+const safeUrl = u => /^https?:\/\//.test(u);
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
+  authDomain: "queen-of-art.firebaseapp.com",
+  projectId: "queen-of-art",
+  storageBucket: "queen-of-art.firebasestorage.app",
+  messagingSenderId: "681441268668",
+  appId: "1:681441268668:web:ef7e01b245bb96995291b9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function renderTopbar() {
+  // Reuse the same topbar as index.html
+  const header = $('top');
+  header.innerHTML = `
+  <div class="bar">
+    <a class="logo" href="index.html">Queen of Art</a>
+    <nav aria-label="Main">
+      <a href="index.html#courses">Courses</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="index.html#mentors">Mentors</a>
+      <a href="index.html#tools">Tools</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="courses.html">Learning hub</a>
+      <a href="admin.html" style="font-weight:bold;color:var(--marigold)">Admin</a>
+      <div class="acct" id="acct">
+        <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
+          <span class="av" id="avatar">A</span><span id="acctName">Admin</span>
+        </button>
+        <div class="menu hide" id="acctMenu">
+          <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+          <a href="profile.html">My profile</a>
+          <button type="button" id="navLogout">Log out</button>
+        </div>
+      </div>
+    </nav>
+  </div>`;
+
+  // Wire up menu
+  function closeMenu(){ 
+    $('acctMenu').classList.add('hide'); 
+    $('acctBtn').setAttribute('aria-expanded','false'); 
+  }
+  $('acctBtn').onclick = e => {
+    e.stopPropagation();
+    const open = $('acctMenu').classList.toggle('hide') === false;
+    $('acctBtn').setAttribute('aria-expanded', open);
+  };
+  document.addEventListener('click', e => { if(!$('acct').contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeMenu(); });
+  $('navLogout').onclick = () => window.netlifyIdentity?.logout();
+
+  // Show user info
+  const user = window.netlifyIdentity?.currentUser();
+  if (user) {
+    const meta = user.user_metadata || {};
+    const name = meta.full_name || user.email.split('@')[0];
+    $('avatar').textContent = name.trim().charAt(0).toUpperCase();
+    $('acctName').textContent = name.trim().split(' ')[0];
+    $('menuName').textContent = name;
+    $('menuEmail').textContent = user.email;
+  }
+}
+// ==========================================
 const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
 const MAX_BYTES = 15 * 1024 * 1024, CHUNK = 800000;
 let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
@@ -63,21 +135,62 @@ function fail(what, e) {
 }
 function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
-(async () => {
+// ===== Wait for Netlify Identity to fully load =====
+function initApp() {
   renderTopbar();
-  const user = await authReady();
-  if (!isAdminUser(user)) {
-    $('gate').innerHTML = '<div class="note">This page is for the site admin only. <a href="register.html">Log in</a> with the admin email (and make sure the email is verified).</div>';
+  
+  const user = window.netlifyIdentity.currentUser();
+  if (!user) {
+    $('gate').innerHTML = '<div class="note">This page is for the site admin only. <a href="javascript:netlifyIdentity.open()">Log in</a> with your admin account.</div>';
     return;
   }
-  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  
+  // Ensure roles are loaded — refresh if missing
+  let roles = user.roles || [];
+  if (!roles.length) {
+    user.refresh().then(() => {
+      // Re-check after refresh
+      const freshRoles = user.roles || [];
+      if (!freshRoles.includes('admin')) {
+        $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity, then log out and back in.</div>';
+      } else {
+        showAdminPanel();
+      }
+    });
+    return;
+  }
+  
+  if (!roles.includes('admin')) {
+    $('gate').innerHTML = '<div class="note">Access denied. Add "admin" to your user in Netlify Identity → Identity tab → click your email → Roles → type "admin" → Add. Then log out and log back in.</div>';
+    return;
+  }
+  
+  showAdminPanel();
+}
 
-  $('tabC').onclick = () => tab('C'); $('tabS').onclick = () => tab('S');
+function showAdminPanel() {
+  $('gate').classList.add('hide'); 
+  $('app').classList.remove('hide');
+
+  $('tabC').onclick = () => tab('C'); 
+  $('tabS').onclick = () => tab('S');
   $('newC').onclick = () => { cur = null; editingLesson = null; drawCourseList(); renderEditor(null); };
   $('sample').onclick = addSample;
   $('search').oninput = drawStudents;
-  await loadCourses();
-})();
+  loadCourses();
+}
+
+// Wait for Netlify Identity before running
+if (window.netlifyIdentity) {
+  window.netlifyIdentity.on("init", initApp);
+  window.netlifyIdentity.on("login", () => window.location.reload());
+  // If already initialized, run immediately
+  if (window.netlifyIdentity.currentUser() !== undefined) {
+    initApp();
+  }
+} else {
+  $('gate').innerHTML = '<div class="note">Netlify Identity loading... <br>If this stays, deploy to Netlify and enable Identity in your site settings.</div>';
+}
 
 function tab(t) {
   $('paneC').classList.toggle('hide', t !== 'C'); $('paneS').classList.toggle('hide', t !== 'S');
@@ -446,26 +559,6 @@ function drawStudents() {
     };
   });
 }
-</script>
- <!-- Load the widget FIRST -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-
-<!-- Your code runs SECOND -->
-<script>
-  async function checkAdminAccess() {
-    const user = window.netlifyIdentity.currentUser();
-    if (!user) {
-      window.netlifyIdentity.open();
-      return;
-    }
-    await user.refresh();
-    const roles = user.roles || [];
-    if (!roles.includes('admin')) {
-      document.body.innerHTML = `<div style="padding:3rem;text-align:center"><h1 style="color:#e74c3c;">Access Denied ❌</h1><p>Only administrators can view this page.</p><button onclick="window.netlifyIdentity.logout(); location.reload();">Log Out</button></div>`;
-    }
-  }
-  window.netlifyIdentity.on("init", checkAdminAccess);
-  window.netlifyIdentity.on("login", () => location.reload());
 </script>
 </body>
 </html>
