@@ -1,3 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course | Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top"></header>
+
+<div class="hero2">
+  <div class="wrap">
+    <span class="tag" id="cLevel"></span>
+    <h1 id="cTitle">Loading...</h1>
+    <p id="cSummary"></p>
+  </div>
+</div>
+
+<main class="wrap pad">
+  <div class="note hide" id="gate"></div>
+  <div class="layout hide" id="layout">
+    <aside class="side">
+      <h3>Modules</h3>
+      <div class="muted hide" id="progText"></div>
+      <div class="progress hide" id="progBar"><i id="progFill"></i></div>
+      <div id="certBox" style="margin-bottom:12px"></div>
+      <div id="outline"></div>
+    </aside>
+    <section class="viewer panel" id="viewer"></section>
+  </div>
+</main>
+
+<footer class="mini">
+  <div class="wrap">
+    &copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp;
+    <a href="courses.html">Learning hub</a>
+    <a href="payment.html">Payment Terms</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </div>
+</footer>
+
 <!-- ✅ CORRECT ORDER: Identity FIRST → Firebase → app.js → page code LAST -->
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -10,11 +53,17 @@
 (async () => {
   renderTopbar();
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  
   const cid = new URLSearchParams(location.search).get('id');
   const user = await authReady();
   const admin = isAdminUser(user);
 
-  function stop(msg) { $('cTitle').textContent = 'Course'; $('gate').textContent = msg; $('gate').classList.remove('hide'); }
+  function stop(msg) {
+    $('cTitle').textContent = 'Course';
+    $('gate').textContent = msg;
+    $('gate').classList.remove('hide');
+  }
+
   if (!cid) return stop('Course not found. Go back to the Learning hub and pick a course.');
 
   let course;
@@ -22,7 +71,9 @@
     const s = await db.collection('catalog').doc(cid).get();
     if (!s.exists) throw new Error('missing');
     course = s.data();
-  } catch (e) { return stop('Course not found. Go back to the Learning hub and pick a course.'); }
+  } catch (e) {
+    return stop('Course not found. Go back to the Learning hub and pick a course.');
+  }
 
   document.title = course.title + ' | Queen of Art';
   $('cTitle').textContent = course.title;
@@ -30,25 +81,53 @@
   $('cSummary').textContent = course.summary || '';
 
   let mine = [];
-  if (user) { try { const s = await db.collection('users').doc(user.id || user.email).get(); mine = (s.data() || {}).courses || []; } catch (e) {} }
+  if (user) {
+    try {
+      const s = await db.collection('users').doc(user.id || user.email).get();
+      mine = (s.data() || {}).courses || [];
+    } catch (e) {}
+  }
   const enrolled = mine.includes(cid);
   const canView = enrolled || admin;
 
   const col = db.collection('catalog').doc(cid).collection('lessons');
-  const q = canView ? col.where('published', '==', true) : col.where('published', '==', true).where('preview', '==', true);
+  const q = canView
+    ? col.where('published', '==', true)
+    : col.where('published', '==', true).where('preview', '==', true);
+  
   const lessons = {};
-  try { (await q.get()).forEach(d => lessons[d.id] = { id: d.id, ...d.data() }); } catch (e) {}
+  try {
+    (await q.get()).forEach(d => lessons[d.id] = { id: d.id, ...d.data() });
+  } catch (e) {}
 
   const byOrder = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
   let items = course.outline || [];
-  if (!items.length) items = Object.values(lessons).sort(byOrder).map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, passMark: l.passMark || 80 }));
+  if (!items.length) {
+    items = Object.values(lessons).sort(byOrder).map(l => ({
+      id: l.id,
+      title: l.title,
+      type: l.type,
+      preview: !!l.preview,
+      module: l.module || 1,
+      passMark: l.passMark || 80
+    }));
+  }
   items = items.map(i => ({ ...i, module: i.module || 1 }));
   const mods = [...new Set(items.map(i => i.module))].sort((a, b) => a - b);
   const quizzes = items.filter(i => i.type === 'quiz');
 
   let done = [], passed = {};
-  const progRef = user ? db.collection('users').doc(user.id || user.email).collection('progress').doc(cid) : null;
-  if (enrolled && progRef) { try { const s = await progRef.get(); const d = s.data() || {}; done = d.done || []; passed = d.passed || {}; } catch (e) {} }
+  const progRef = user
+    ? db.collection('users').doc(user.id || user.email).collection('progress').doc(cid)
+    : null;
+  if (enrolled && progRef) {
+    try {
+      const s = await progRef.get();
+      const d = s.data() || {};
+      done = d.done || [];
+      passed = d.passed || {};
+    } catch (e) {}
+  }
   const saveProgress = () => progRef.set({ done, passed }, { merge: true });
 
   const quizOf = m => items.find(i => i.module === m && i.type === 'quiz');
@@ -74,7 +153,11 @@
   }
 
   function typeLabel(it) {
-    if (it.type === 'quiz') return passedQuiz(it) ? 'Quiz - passed (' + passed[it.id] + '%)' : 'Quiz';
+    if (it.type === 'quiz') {
+      return passedQuiz(it)
+        ? 'Quiz - passed (' + passed[it.id] + '%)'
+        : 'Quiz';
+    }
     return ({ pdf: 'Handout', file: 'Download', video: 'Video', link: 'Link', text: 'Lesson' })[it.type] || 'Lesson';
   }
 
@@ -90,27 +173,42 @@
       });
     });
     $('outline').innerHTML = html || '<p class="muted">No lessons yet.</p>';
-    $('outline').querySelectorAll('.item').forEach(b => b.onclick = () => open(b.dataset.id));
+    $('outline').querySelectorAll('.item').forEach(b => {
+      b.onclick = () => open(b.dataset.id);
+    });
 
     if (enrolled && items.length) {
       const total = quizzes.length || items.length;
-      const n = quizzes.length ? quizzes.filter(passedQuiz).length : items.filter(i => done.includes(i.id)).length;
-      $('progText').textContent = quizzes.length ? n + ' of ' + total + ' module quizzes passed' : n + ' of ' + total + ' lessons complete';
-      $('progText').classList.remove('hide'); $('progBar').classList.remove('hide');
+      const n = quizzes.length
+        ? quizzes.filter(passedQuiz).length
+        : items.filter(i => done.includes(i.id)).length;
+      $('progText').textContent = quizzes.length
+        ? n + ' of ' + total + ' module quizzes passed'
+        : n + ' of ' + total + ' lessons complete';
+      $('progText').classList.remove('hide');
+      $('progBar').classList.remove('hide');
       $('progFill').style.width = Math.round(100 * n / total) + '%';
     }
     const complete = enrolled && quizzes.length > 0 && quizzes.every(passedQuiz);
-    $('certBox').innerHTML = complete ? `<a class="btn" style="display:block;text-align:center" href="certificate.html?id=${encodeURIComponent(cid)}">Get your certificate</a>` : '';
+    $('certBox').innerHTML = complete
+      ? `<a class="btn" style="display:block;text-align:center" href="certificate.html?id=${encodeURIComponent(cid)}">Get your certificate</a>`
+      : '';
   }
 
   function clearReader() {
-    if (keyHandler) { document.removeEventListener('keydown', keyHandler); keyHandler = null; }
+    if (keyHandler) {
+      document.removeEventListener('keydown', keyHandler);
+      keyHandler = null;
+    }
     window.onresize = null;
   }
 
   function lockedPanel(it) {
-    const prev = mods[mods.indexOf(it.module) - 1], pq = quizOf(prev);
-    if (moduleLocked(it) && pq) return `<div class="note">This module is locked. Pass the <strong>Module ${prev} quiz</strong> with at least ${pq.passMark || 80}% to unlock it. You can retake the quiz as many times as you need.</div>`;
+    const prev = mods[mods.indexOf(it.module) - 1];
+    const pq = quizOf(prev);
+    if (moduleLocked(it) && pq) {
+      return `<div class="note">This module is locked. Pass the <strong>Module ${prev} quiz</strong> with at least ${pq.passMark || 80}% to unlock it. You can retake the quiz as many times as you need.</div>`;
+    }
     return user
       ? 'This lesson is locked. Enroll in this course to open it. See the <a href="payment.html">Payment Terms</a> page.'
       : 'Please <a href="register.html">log in</a> to open this lesson.';
@@ -118,57 +216,103 @@
 
   function open(id) {
     clearReader();
-    current = id; drawOutline();
-    const it = items.find(i => i.id === id), l = lessons[id];
+    current = id;
+    drawOutline();
+    const it = items.find(i => i.id === id);
+    const l = lessons[id];
     if (!it) return;
+    
     if (!l || !accessible(it)) {
       const body = lockedPanel(it);
       $('viewer').innerHTML = `<h2>${esc(it.title)}</h2>${body.startsWith('<div') ? body : '<div class="note">' + body + '</div>'}`;
       return;
     }
+    
     if (l.type === 'quiz') return renderQuiz(l, it);
 
     let html = `<h2>${esc(l.title)}</h2>`;
     const url = safeUrl(l.url);
+    
     if (l.type === 'video' && url) {
       const emb = videoEmbed(url);
-      html += emb ? `<div class="video"><iframe src="${esc(emb)}" allowfullscreen loading="lazy" title="${esc(l.title)}"></iframe></div>` : `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the video</a></p>`;
+      html += emb
+        ? `<div class="video"><iframe src="${esc(emb)}" allowfullscreen loading="lazy" title="${esc(l.title)}"></iframe></div>`
+        : `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the video</a></p>`;
     }
     if (l.body) html += `<div class="body">${esc(l.body)}</div>`;
-    if (l.type === 'pdf' && l.fileId) html += `<div class="pdfbox"><div class="pdfstage" id="stage"><span class="muted">Loading the handout...</span></div><div class="pdfnav"><button class="btn sm alt" id="pdfPrev" type="button">Previous</button><span id="pdfLabel"></span><button class="btn sm alt" id="pdfNext" type="button">Next</button></div><p class="muted" style="text-align:center;font-size:.85rem;margin-top:8px">Swipe left or right, or use the buttons or arrow keys. This handout is for reading online.</p></div>`;
-    if (l.type === 'file' && l.fileId) html += `<div class="panel" style="background:var(--lilac);border-color:var(--lilac)"><strong>${esc(l.fileName || 'Course file')}</strong> <span class="muted">(${fmtSize(l.fileSize || 0)})</span><div class="row"><button class="btn alt" id="dlBtn" type="button">Download file</button></div><div id="dlmsg"></div></div>`;
-    if (l.type === 'link' && url) html += `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the handout</a></p>`;
-    if (enrolled) html += `<div class="row"><button class="btn" id="doneBtn" type="button">${done.includes(id) ? 'Mark as not done' : 'Mark as complete'}</button></div><div id="pmsg"></div>`;
+    if (l.type === 'pdf' && l.fileId) {
+      html += `<div class="pdfbox"><div class="pdfstage" id="stage"><span class="muted">Loading the handout...</span></div><div class="pdfnav"><button class="btn sm alt" id="pdfPrev" type="button">Previous</button><span id="pdfLabel"></span><button class="btn sm alt" id="pdfNext" type="button">Next</button></div><p class="muted" style="text-align:center;font-size:.85rem;margin-top:8px">Swipe left or right, or use the buttons or arrow keys. This handout is for reading online.</p></div>`;
+    }
+    if (l.type === 'file' && l.fileId) {
+      html += `<div class="panel" style="background:var(--lilac);border-color:var(--lilac)"><strong>${esc(l.fileName || 'Course file')}</strong> <span class="muted">(${fmtSize(l.fileSize || 0)})</span><div class="row"><button class="btn alt" id="dlBtn" type="button">Download file</button></div><div id="dlmsg"></div></div>`;
+    }
+    if (l.type === 'link' && url) {
+      html += `<p><a class="btn alt" href="${esc(url)}" target="_blank" rel="noopener">Open the handout</a></p>`;
+    }
+    if (enrolled) {
+      html += `<div class="row"><button class="btn" id="doneBtn" type="button">${done.includes(id) ? 'Mark as not done' : 'Mark as complete'}</button></div><div id="pmsg"></div>`;
+    }
+    
     $('viewer').innerHTML = html;
 
     if (l.type === 'pdf' && l.fileId) openPdf(l);
-    if (l.type === 'file' && l.fileId) $('dlBtn').onclick = () => downloadFile(l, $('dlBtn'));
-    if (enrolled) $('doneBtn').onclick = async () => {
-      const next = done.includes(id) ? done.filter(x => x !== id) : [...done, id];
-      const prev = done; try { done = next; await saveProgress(); open(id); } catch (e) { done = prev; $('pmsg').className = 'msg err'; $('pmsg').textContent = 'Could not save your progress. Try again.'; }
-    };
+    if (l.type === 'file' && l.fileId) {
+      $('dlBtn').onclick = () => downloadFile(l, $('dlBtn'));
+    }
+    if (enrolled) {
+      $('doneBtn').onclick = async () => {
+        const next = done.includes(id)
+          ? done.filter(x => x !== id)
+          : [...done, id];
+        const prev = done;
+        try {
+          done = next;
+          await saveProgress();
+          open(id);
+        } catch (e) {
+          done = prev;
+          $('pmsg').className = 'msg err';
+          $('pmsg').textContent = 'Could not save your progress. Try again.';
+        }
+      };
+    }
   }
 
   async function loadFileBytes(l) {
     const fref = db.collection('catalog').doc(cid).collection('files').doc(l.fileId);
     const meta = (await fref.get()).data();
-    const parts = await Promise.all(Array.from({ length: meta.chunks }, (_, i) => fref.collection('chunks').doc(String(i)).get()));
+    const parts = await Promise.all(
+      Array.from({ length: meta.chunks }, (_, i) =>
+        fref.collection('chunks').doc(String(i)).get()
+      )
+    );
     const arrs = parts.map(d => d.data().data.toUint8Array());
     const bytes = new Uint8Array(arrs.reduce((s, a) => s + a.length, 0));
-    let off = 0; arrs.forEach(a => { bytes.set(a, off); off += a.length; });
+    let off = 0;
+    arrs.forEach(a => { bytes.set(a, off); off += a.length; });
     return { meta, bytes };
   }
 
   async function downloadFile(l, btn) {
-    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing...';
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Preparing...';
     try {
       const { meta, bytes } = await loadFileBytes(l);
       const blob = new Blob([bytes], { type: meta.type || 'application/octet-stream' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = meta.name; document.body.appendChild(a); a.click(); a.remove();
+      a.href = URL.createObjectURL(blob);
+      a.download = meta.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 15000);
-    } catch (e) { $('dlmsg').className = 'msg err'; $('dlmsg').textContent = 'Could not download the file. Make sure you are logged in and enrolled, then try again.'; }
-    btn.disabled = false; btn.textContent = label;
+    } catch (e) {
+      $('dlmsg').className = 'msg err';
+      $('dlmsg').textContent = 'Could not download the file. Make sure you are logged in and enrolled, then try again.';
+    }
+    btn.disabled = false;
+    btn.textContent = label;
   }
 
   async function openPdf(l) {
@@ -177,9 +321,11 @@
       if (!window.pdfjsLib) throw new Error('reader missing');
       const { bytes } = await loadFileBytes(l);
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const total = pdf.numPages; let n = 1, busy = false, pending = false;
+      const total = pdf.numPages;
+      let n = 1, busy = false, pending = false;
       const canvas = document.createElement('canvas');
-      stage.innerHTML = ''; stage.appendChild(canvas);
+      stage.innerHTML = '';
+      stage.appendChild(canvas);
       canvas.oncontextmenu = e => e.preventDefault();
 
       async function draw() {
@@ -190,46 +336,45 @@
           try {
             const page = await pdf.getPage(n);
             const cssW = Math.min(stage.clientWidth || 700, 900);
-            const base = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: cssW / base.width });
+            const base = page.getViewport({ scale: 1 });
+            const vp = page.getViewport({ scale: cssW / base.width });
             const dpr = window.devicePixelRatio || 1;
-            canvas.width = Math.floor(vp.width * dpr); canvas.height = Math.floor(vp.height * dpr);
-            canvas.style.width = vp.width + 'px'; canvas.style.height = vp.height + 'px';
+            
+            canvas.width = Math.floor(vp.width * dpr);
+            canvas.height = Math.floor(vp.height * dpr);
+            canvas.style.width = vp.width + 'px';
+            canvas.style.height = vp.height + 'px';
+            
             const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport: vp, transform: [dpr, 0, 0, dpr, 0, 0] }).promise;
-            ctx.save(); ctx.scale(dpr, dpr); ctx.globalAlpha = 0.08; ctx.fillStyle = '#3B1C78'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+            await page.render({
+              canvasContext: ctx,
+              viewport: vp,
+              transform: [dpr, 0, 0, dpr, 0, 0]
+            }).promise;
+            
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.globalAlpha = 0.08;
+            ctx.fillStyle = '#3B1C78';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
             const mark = 'Queen of Art - ' + ((user && user.email) || 'student');
-            [0.25, 0.5, 0.75].forEach(f => { ctx.save(); ctx.translate(vp.width / 2, vp.height * f); ctx.rotate(-0.45); ctx.fillText(mark, 0, 0); ctx.restore(); });
+            [0.25, 0.5, 0.75].forEach(f => {
+              ctx.save();
+              ctx.translate(vp.width / 2, vp.height * f);
+              ctx.rotate(-0.45);
+              ctx.fillText(mark, 0, 0);
+              ctx.restore();
+            });
             ctx.restore();
           } catch (e) {}
+          
           $('pdfLabel').textContent = 'Page ' + n + ' of ' + total;
-          $('pdfPrev').disabled = n <= 1; $('pdfNext').disabled = n >= total;
+          $('pdfPrev').disabled = n <= 1;
+          $('pdfNext').disabled = n >= total;
         } while (pending);
         busy = false;
       }
-      const go = d => { const m = Math.min(Math.max(1, n + d), total); if (m !== n) { n = m; draw(); } };
-      $('pdfPrev').onclick = () => go(-1); $('pdfNext').onclick = () => go(1);
-      keyHandler = e => { if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); };
-      document.addEventListener('keydown', keyHandler);
-      let sx = null;
-      stage.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-      stage.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
-      let t; window.onresize = () => { clearTimeout(t); t = setTimeout(draw, 200); };
-      draw();
-    } catch (e) { stage.innerHTML = '<span class="muted">Could not load the handout. Make sure you are logged in and enrolled, then refresh the page.</span>'; }
-  }
-
-  function renderQuiz(l, it) {
-    clearReader();
-    const qs = l.questions || [], pass = l.passMark || 80, best = passed[l.id];
-    const order = qs.map((_, i) => i);
-    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    let html = `<h2>${esc(l.title)}</h2><p class="body">${qs.length} questions. You need ${pass}% or higher to unlock the next module. You can retake this quiz as many times as you need.</p>`;
-    if (best != null) html += `<p style="margin-bottom:14px"><span class="tag ok">Best score: ${best}%</span></p>`;
-    if (!qs.length) { $('viewer').innerHTML = html + '<div class="note">This quiz has no questions yet.</div>'; return; }
-    html += '<div id="quizForm">' + order.map((qi, di) => `<div class="q" data-qi="${qi}"><strong>${di + 1}. ${esc(qs[qi].q)}</strong>` +
-      qs[qi].options.map((o, oi) => `<label class="opt"><input type="radio" name="q${qi}" value="${oi}"><span>${esc(o)}</span></label>`).join('') + '</div>').join('') + '</div>';
-    html += '<div class="row"><button class="btn" id="qSubmit" type="button">Submit answers</button></div><div id="qResult"></div>';
-    $('viewer').innerHTML = html;
-
-    $('qSubmit').onclick = async () => {
-      let correct = 0, unanswered = 0; const missed
+      
+      const go = d => {
+        const m = Math.min(Math.max(1, n + d), total);
