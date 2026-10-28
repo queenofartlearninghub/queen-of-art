@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Admin | Queen of Art</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap"
+  rel="stylesheet">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -41,23 +43,21 @@
     <div class="chips" id="sfilters" style="margin-top:14px;margin-bottom:0"></div>
     <div id="slist" style="margin-top:18px"></div>
   </section>
-
-  <div id="amsg" class="msg hide"></div>
 </main>
 
-<!-- ✅ Netlify Identity FIRST -->
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<div class="wrap" style="padding-bottom:40px"><div id="amsg" class="msg hide"></div></div>
 
-<!-- Then Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-  // ===== MISSING HELPERS & FIREBASE INIT =====
+/* ===== Helpers ===== */
 const $ = id => document.getElementById(id);
-const esc = t => (t == null ? '' : String(t)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = t => (t == null ? '' : String(t)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
 const safeUrl = u => /^https?:\/\//.test(u);
 
+/* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
   authDomain: "queen-of-art.firebaseapp.com",
@@ -68,11 +68,28 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 
+/* Convenience check only. The REAL protection is your Firestore rules. */
+const ALLOWED_ADMIN_EMAILS = ['almirabagro12@gmail.com'];
+
+const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
+const MAX_BYTES = 15 * 1024 * 1024, CHUNK = 800000;
+let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
+let panelReady = false;
+
+function fail(what, e) {
+  const code = e && e.code ? ' (' + e.code + ')' : '';
+  const hint = e && e.code === 'permission-denied'
+    ? ' Firestore blocked this. Publish the latest rules, check that the admin UID in the rules matches your Firebase login, then log out and log in again.'
+    : '';
+  flash(what + code + hint);
+}
+function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
+
+/* ===== Top bar (built once) ===== */
 function renderTopbar() {
-  // Reuse the same topbar as index.html
-  const header = $('top');
-  header.innerHTML = `
+  $('top').innerHTML = `
   <div class="bar">
     <a class="logo" href="index.html">Queen of Art</a>
     <nav aria-label="Main">
@@ -83,7 +100,7 @@ function renderTopbar() {
       <a href="index.html#contact">Contact</a>
       <a href="courses.html">Learning hub</a>
       <a href="admin.html" style="font-weight:bold;color:var(--marigold)">Admin</a>
-      <div class="acct" id="acct">
+      <div class="acct hide" id="acct">
         <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
           <span class="av" id="avatar">A</span><span id="acctName">Admin</span>
         </button>
@@ -96,93 +113,74 @@ function renderTopbar() {
     </nav>
   </div>`;
 
-  // Wire up menu
-  function closeMenu(){ 
-    $('acctMenu').classList.add('hide'); 
-    $('acctBtn').setAttribute('aria-expanded','false'); 
-  }
+  const closeMenu = () => { $('acctMenu').classList.add('hide'); $('acctBtn').setAttribute('aria-expanded', 'false'); };
   $('acctBtn').onclick = e => {
     e.stopPropagation();
     const open = $('acctMenu').classList.toggle('hide') === false;
     $('acctBtn').setAttribute('aria-expanded', open);
   };
-  document.addEventListener('click', e => { if(!$('acct').contains(e.target)) closeMenu(); });
-  document.addEventListener('keydown', e => { if(e.key==='Escape') closeMenu(); });
-  $('navLogout').onclick = () => window.netlifyIdentity?.logout();
-
-  // Show user info
-  const user = window.netlifyIdentity?.currentUser();
-  if (user) {
-    const meta = user.user_metadata || {};
-    const name = meta.full_name || user.email.split('@')[0];
-    $('avatar').textContent = name.trim().charAt(0).toUpperCase();
-    $('acctName').textContent = name.trim().split(' ')[0];
-    $('menuName').textContent = name;
-    $('menuEmail').textContent = user.email;
-  }
+  document.addEventListener('click', e => { if (!$('acct').contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  $('navLogout').onclick = () => auth.signOut();
 }
-// ==========================================
-const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
-const MAX_BYTES = 15 * 1024 * 1024, CHUNK = 800000;
-let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
-
-function fail(what, e) {
-  const code = e && e.code ? ' (' + e.code + ')' : '';
-  const hint = e && e.code === 'permission-denied'
-    ? ' Firestore blocked this. Publish the latest rules, check that the admin email in the rules matches your login, then log out and log in again.'
-    : '';
-  flash(what + code + hint);
+function setTopbarUser(user) {
+  if (!user) { $('acct').classList.add('hide'); return; }
+  const name = user.displayName || (user.email || 'Admin').split('@')[0];
+  $('avatar').textContent = name.trim().charAt(0).toUpperCase();
+  $('acctName').textContent = name.trim().split(' ')[0];
+  $('menuName').textContent = name;
+  $('menuEmail').textContent = user.email || '';
+  $('acct').classList.remove('hide');
 }
-function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
-// ===== Wait for Netlify Identity to fully load =====
-// ===== Wait for Netlify Identity to fully load =====
-function initApp() {
-  renderTopbar();
-  
-  const user = window.netlifyIdentity.currentUser();
-  if (!user) {
-    $('gate').innerHTML = '<div class="note">This page is for the site admin only. <a href="javascript:netlifyIdentity.open()">Log in</a> with your admin account.</div>';
-    return;
-  }
+/* ===== Login gate (Firebase Auth) ===== */
+function showLogin(message) {
+  $('app').classList.add('hide');
+  $('gate').classList.remove('hide');
+  $('gate').innerHTML = `
+    <div class="panel" style="max-width:420px">
+      <h2>Admin log in</h2>
+      ${message ? '<div class="note" style="margin-bottom:12px">' + esc(message) + '</div>' : ''}
+      <label for="lgEmail">Email</label>
+      <input id="lgEmail" type="email" autocomplete="username">
+      <label for="lgPass">Password</label>
+      <input id="lgPass" type="password" autocomplete="current-password">
+      <div class="row"><button class="btn" type="button" id="lgBtn">Log in</button></div>
+      <p class="muted" id="lgErr" style="margin-top:10px"></p>
+    </div>`;
+  const go = async () => {
+    const email = $('lgEmail').value.trim(), pass = $('lgPass').value;
+    if (!email || !pass) { $('lgErr').textContent = 'Enter your email and password.'; return; }
+    $('lgBtn').disabled = true; $('lgErr').textContent = 'Logging in...';
+    try { await auth.signInWithEmailAndPassword(email, pass); }
+    catch (e) { $('lgErr').textContent = 'Could not log in (' + (e.code || 'error') + ').'; $('lgBtn').disabled = false; }
+  };
+  $('lgBtn').onclick = go;
+  $('lgPass').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
 
-  // ✅ Quick check — no waiting!
+auth.onAuthStateChanged(user => {
+  setTopbarUser(user);
+  if (!user) { panelReady = false; showLogin(); return; }
   const email = (user.email || '').trim().toLowerCase();
-  const adminEmail = 'almirabagro12@gmail.com'; // your admin email
-  const roles = user.roles || [];
-
-  // If email matches → show panel immediately
-  if (email === adminEmail || roles.includes('admin')) {
-    showAdminPanel();
+  if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
+    panelReady = false;
+    $('app').classList.add('hide');
+    $('gate').classList.remove('hide');
+    $('gate').innerHTML = '<div class="note">Access denied. Only the site administrator can view this page. <a href="#" id="denyOut">Log out</a></div>';
+    $('denyOut').onclick = e => { e.preventDefault(); auth.signOut(); };
     return;
   }
-
-  // Backup: refresh roles once, then trust email
-  if (!roles.length && email === adminEmail) {
-    user.refresh()
-      .then(() => {
-        const freshRoles = user.roles || [];
-        if (freshRoles.includes('admin') || (user.email || '').trim().toLowerCase() === adminEmail) {
-          showAdminPanel();
-        } else {
-          $('gate').innerHTML = '<div class="note">Access denied.</div>';
-        }
-      })
-      .catch(() => {
-        // Network issue? Still let you in since email matches
-        showAdminPanel();
-      });
-    return;
-  }
-
-  $('gate').innerHTML = '<div class="note">Access denied. Only the site administrator can view this page.</div>';
-}
+  showAdminPanel();
+});
 
 function showAdminPanel() {
-  $('gate').classList.add('hide'); 
+  $('gate').classList.add('hide');
   $('app').classList.remove('hide');
+  if (panelReady) return;
+  panelReady = true;
 
-  $('tabC').onclick = () => tab('C'); 
+  $('tabC').onclick = () => tab('C');
   $('tabS').onclick = () => tab('S');
   $('newC').onclick = () => { cur = null; editingLesson = null; drawCourseList(); renderEditor(null); };
   $('sample').onclick = addSample;
@@ -190,27 +188,13 @@ function showAdminPanel() {
   loadCourses();
 }
 
-// Wait for Netlify Identity before running
-if (window.netlifyIdentity) {
-  window.netlifyIdentity.on("init", initApp);
-  window.netlifyIdentity.on("login", () => {
-    // Don't full reload — just re-check
-    setTimeout(initApp, 100);
-  });
-  window.netlifyIdentity.on("logout", () => window.location.reload());
-  // If already initialized, run immediately
-  if (window.netlifyIdentity.currentUser() !== null) {
-    initApp();
-  }
-} else {
-  $('gate').innerHTML = '<div class="note">Netlify Identity loading... <br>If this stays, deploy to Netlify and enable Identity in your site settings.</div>';
-}
-
 function tab(t) {
   $('paneC').classList.toggle('hide', t !== 'C'); $('paneS').classList.toggle('hide', t !== 'S');
   $('tabC').classList.toggle('on', t === 'C'); $('tabS').classList.toggle('on', t === 'S');
   if (t === 'S') loadStudents();
 }
+
+renderTopbar();
 
 /* ---------- Courses ---------- */
 async function loadCourses() {
@@ -227,7 +211,7 @@ function drawCourseList() {
 async function selectCourse(id) {
   cur = id; editingLesson = null; drawCourseList();
   renderEditor(courses.find(c => c.id === id));
-  await loadLessons();
+  try { await loadLessons(); } catch (e) { fail('Could not load the lessons.', e); }
 }
 function renderEditor(c) {
   const isNew = !c; c = c || { level: 'Basic', published: false, order: courses.length + 1 };
@@ -242,15 +226,14 @@ function renderEditor(c) {
     <label for="cCertText">What the student can do (one sentence, shown on the certificate)</label><textarea id="cCertText" rows="3" placeholder="navigate the Canva dashboard, start designs from templates, and save and export work in the right file format.">${esc(c.certText || '')}</textarea>
     <label for="cPrice">Price shown on the course page</label><input id="cPrice" value="${esc(c.price || '')}" placeholder="₱99">
     <label for="cCategory">Category</label>
-
-<select id="cCategory">
-  <option value="Career Templates" ${c.category === 'Career Templates' ? 'selected' : ''}>Career Templates</option>
-  <option value="Beginner ₱99" ${c.category === 'Beginner ₱99' ? 'selected' : ''}>Beginner ₱99</option>
-  <option value="Intermediate ₱199" ${c.category === 'Intermediate ₱199' ? 'selected' : ''}>Intermediate ₱199</option>
-  <option value="Advanced ₱299" ${c.category === 'Advanced ₱299' ? 'selected' : ''}>Advanced ₱299</option>
-  <option value="Certification ₱499" ${c.category === 'Certification ₱499' ? 'selected' : ''}>Certification ₱499</option>
-  <option value="Premium ₱999" ${c.category === 'Premium ₱999' ? 'selected' : ''}>Premium ₱999</option>
-</select>
+    <select id="cCategory">
+      <option value="Career Templates" ${c.category === 'Career Templates' ? 'selected' : ''}>Career Templates</option>
+      <option value="Beginner ₱99" ${c.category === 'Beginner ₱99' ? 'selected' : ''}>Beginner ₱99</option>
+      <option value="Intermediate ₱199" ${c.category === 'Intermediate ₱199' ? 'selected' : ''}>Intermediate ₱199</option>
+      <option value="Advanced ₱299" ${c.category === 'Advanced ₱299' ? 'selected' : ''}>Advanced ₱299</option>
+      <option value="Certification ₱499" ${c.category === 'Certification ₱499' ? 'selected' : ''}>Certification ₱499</option>
+      <option value="Premium ₱999" ${c.category === 'Premium ₱999' ? 'selected' : ''}>Premium ₱999</option>
+    </select>
     <label for="cOrder">Order in the list</label><input id="cOrder" type="number" value="${esc(c.order || 1)}">
     <label class="chk"><input id="cPub" type="checkbox" ${c.published ? 'checked' : ''}> Published (visible to students)</label>
     <div class="row"><button class="btn" type="button" id="saveC">Save course</button>${isNew ? '' : '<button class="btn line" type="button" id="delC">Delete course</button>'}</div>
@@ -259,23 +242,22 @@ function renderEditor(c) {
   if (!isNew) $('delC').onclick = deleteCourse;
 }
 async function saveCourse() {
-  const category = $('cCategory').value;
   const id = $('cId').value.trim();
   if (!/^[a-z0-9-]{3,60}$/.test(id)) return flash('Course ID must be 3 to 60 characters: small letters, numbers, and dashes only.');
   const title = $('cTitle').value.trim();
   if (!title) return flash('Enter a course title.');
   try {
     await db.collection('catalog').doc(id).set({
-  title,
-  level: $('cLevel').value,
-  category: $('cCategory').value,
-  summary: $('cSummary').value.trim(),
-  price: $('cPrice').value.trim(),
-  certTitle: $('cCert').value.trim(),
-  certText: $('cCertText').value.trim(),
-  order: Number($('cOrder').value) || 1,
-  published: $('cPub').checked
-}, { merge: true });
+      title,
+      level: $('cLevel').value,
+      category: $('cCategory').value,
+      summary: $('cSummary').value.trim(),
+      price: $('cPrice').value.trim(),
+      certTitle: $('cCert').value.trim(),
+      certText: $('cCertText').value.trim(),
+      order: Number($('cOrder').value) || 1,
+      published: $('cPub').checked
+    }, { merge: true });
   } catch (e) { return fail('Could not save the course.', e); }
   flash('Course saved.', true);
   try { await loadCourses(); await selectCourse(id); } catch (e) { fail('The course was saved, but the page could not refresh.', e); }
@@ -294,7 +276,6 @@ async function deleteCourse() {
 
 /* ---------- Lessons ---------- */
 const byModule = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
-const FILE_TYPES = ['file', 'pdf'];
 const TYPE_NAMES = { module: 'Module page (handout + download + quiz in one lesson)', text: 'Text lesson', video: 'Video', link: 'Link', file: 'Downloadable file only', pdf: 'PDF handout only (read online)', quiz: 'Quiz only' };
 
 async function loadLessons() {
@@ -340,7 +321,7 @@ function lessonSummary(x) {
 function renderLessons() {
   const lastMod = lessonList.length ? (lessonList[lessonList.length - 1].module || 1) : 1;
   const l = lessonList.find(x => x.id === editingLesson) || { type: 'module', published: true, preview: false, order: lessonList.length + 1, module: lastMod };
-  const cur_ = (name, size) => name ? '<p class="muted" style="margin-top:6px">Current file: ' + esc(name) + ' (' + fmtSize(size || 0) + '). Choose a new file to replace it.</p>' : '';
+  const curFile = (name, size) => name ? '<p class="muted" style="margin-top:6px">Current file: ' + esc(name) + ' (' + fmtSize(size || 0) + '). Choose a new file to replace it.</p>' : '';
   $('lessonsBox').innerHTML = `<div class="panel">
     <h2>Lessons</h2>
     ${lessonList.map(x => `<div class="lrow"><div><strong>Module ${esc(x.module || 1)} - ${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(lessonSummary(x))}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
@@ -355,14 +336,14 @@ function renderLessons() {
 
     <div id="moduleBox" class="${l.type === 'module' ? '' : 'hide'}">
       <label for="lMPdf">PDF handout (students read it on the page and cannot download it, up to 15 MB)</label>
-      <input type="file" id="lMPdf" accept=".pdf">${cur_(l.pdfName, l.pdfSize)}
+      <input type="file" id="lMPdf" accept=".pdf">${curFile(l.pdfName, l.pdfSize)}
       <label for="lMDl">Slides to download, such as a PPTX (up to 15 MB)</label>
-      <input type="file" id="lMDl" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">${cur_(l.dlName, l.dlSize)}
+      <input type="file" id="lMDl" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">${curFile(l.dlName, l.dlSize)}
     </div>
 
     <div id="fileBox" class="${l.type === 'file' || l.type === 'pdf' ? '' : 'hide'}">
       <label for="lFile" id="lFileLabel">Upload a file</label>
-      <input type="file" id="lFile">${cur_(l.fileName, l.fileSize)}
+      <input type="file" id="lFile">${curFile(l.fileName, l.fileSize)}
     </div>
 
     <div id="urlBox" class="${l.type === 'video' || l.type === 'link' || l.type === 'module' ? '' : 'hide'}">
@@ -403,7 +384,7 @@ function renderLessons() {
 
 /* ---------- File uploads (stored in Firestore in small pieces) ---------- */
 async function uploadFile(cid, f, onp) {
-  const fid = 'f-' + Date.now().toString(36);
+  const fid = 'f-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const buf = new Uint8Array(await f.arrayBuffer());
   const n = Math.max(1, Math.ceil(buf.length / CHUNK));
   const fref = db.collection('catalog').doc(cid).collection('files').doc(fid);
@@ -431,7 +412,7 @@ async function saveLesson() {
   const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
   if (!title) return flash('Enter a lesson title.');
   const hasUrl = type === 'video' || type === 'link' || type === 'module';
-  if (hasUrl && url && !safeUrl(url)) return flash('The link must start with https://');
+  if (hasUrl && url && !safeUrl(url)) return flash('The link must start with http:// or https://');
   const mod = Math.max(1, Number($('lModule').value) || 1);
   const quizText = $('lQuiz').value.trim();
   let questions = null, passMark = 80;
@@ -455,6 +436,7 @@ async function saveLesson() {
 
   const id = editingLesson || ('l-' + Date.now().toString(36));
   const btn = $('saveL'); btn.disabled = true;
+  const newlyUploaded = []; // so we can clean up if the final save fails
   try {
     const info = {}, toDelete = [];
     let adopted = null;
@@ -464,6 +446,7 @@ async function saveLesson() {
       if (!active.includes(a)) { if (old[k.id] && old[k.id] !== adopted) toDelete.push(old[k.id]); continue; }
       if (picked[a]) {
         const r = await uploadFile(cur, picked[a], pr => { $('upText').textContent = 'Uploading... ' + pr + '%'; });
+        newlyUploaded.push(r.fileId);
         info[k.id] = r.fileId; info[k.name] = r.fileName; info[k.size] = r.fileSize; info[k.type] = r.fileType;
         if (old[k.id]) toDelete.push(old[k.id]);
       } else if (old[k.id]) {
@@ -482,7 +465,11 @@ async function saveLesson() {
     for (const fid of [info.fileId, info.pdfId, info.dlId].filter(Boolean)) await db.collection('catalog').doc(cur).collection('files').doc(fid).update({ preview });
     for (const fid of toDelete) { try { await deleteFile(cur, fid); } catch (e) {} }
     await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
-  } catch (e) { fail('Could not save the lesson.', e); btn.disabled = false; }
+  } catch (e) {
+    // remove files uploaded in this attempt so they are not orphaned
+    for (const fid of newlyUploaded) { try { await deleteFile(cur, fid); } catch (x) {} }
+    fail('Could not save the lesson.', e); btn.disabled = false;
+  }
 }
 async function deleteLesson(id) {
   if (!confirm('Delete this lesson?')) return;
