@@ -1,44 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Course | Queen of Art</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css">
-</head>
-<body>
-<header id="top"></header>
-
-<div class="hero2">
-  <div class="wrap">
-    <span class="tag" id="cLevel"></span>
-    <h1 id="cTitle">Loading...</h1>
-    <p id="cSummary"></p>
-  </div>
-</div>
-
-<main class="wrap pad">
-  <div class="note hide" id="gate"></div>
-  <div class="layout hide" id="layout">
-    <aside class="side">
-      <h3>Modules</h3>
-      <div class="muted hide" id="progText"></div>
-      <div class="progress hide" id="progBar"><i id="progFill"></i></div>
-      <div id="certBox" style="margin-bottom:12px"></div>
-      <div id="outline"></div>
-    </aside>
-    <section class="viewer panel" id="viewer"></section>
-  </div>
-</main>
-
-<footer class="mini"><div class="wrap">&copy; 2026 Queen of Art Online Learning Courses &nbsp;|&nbsp; <a href="courses.html">Learning hub</a><a href="payment.html">Payment Terms</a><a href="privacy.html">Privacy Policy</a></div></footer>
-
+<!-- ✅ CORRECT ORDER: Identity FIRST → Firebase → app.js → page code LAST -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="app.js"></script>
+
 <script>
 (async () => {
   renderTopbar();
@@ -63,11 +30,10 @@
   $('cSummary').textContent = course.summary || '';
 
   let mine = [];
-  if (user) { try { const s = await db.collection('users').doc(user.uid).get(); mine = (s.data() || {}).courses || []; } catch (e) {} }
+  if (user) { try { const s = await db.collection('users').doc(user.id || user.email).get(); mine = (s.data() || {}).courses || []; } catch (e) {} }
   const enrolled = mine.includes(cid);
   const canView = enrolled || admin;
 
-  // Lessons: everything if enrolled, free-preview lessons otherwise
   const col = db.collection('catalog').doc(cid).collection('lessons');
   const q = canView ? col.where('published', '==', true) : col.where('published', '==', true).where('preview', '==', true);
   const lessons = {};
@@ -80,13 +46,11 @@
   const mods = [...new Set(items.map(i => i.module))].sort((a, b) => a - b);
   const quizzes = items.filter(i => i.type === 'quiz');
 
-  // Progress (enrolled students only)
   let done = [], passed = {};
-  const progRef = user ? db.collection('users').doc(user.uid).collection('progress').doc(cid) : null;
+  const progRef = user ? db.collection('users').doc(user.id || user.email).collection('progress').doc(cid) : null;
   if (enrolled && progRef) { try { const s = await progRef.get(); const d = s.data() || {}; done = d.done || []; passed = d.passed || {}; } catch (e) {} }
   const saveProgress = () => progRef.set({ done, passed }, { merge: true });
 
-  // Module rules: a module opens when the previous module's quiz is passed
   const quizOf = m => items.find(i => i.module === m && i.type === 'quiz');
   const passedQuiz = qz => !!qz && (passed[qz.id] || 0) >= (qz.passMark || 80);
   const unlocked = m => {
@@ -207,7 +171,6 @@
     btn.disabled = false; btn.textContent = label;
   }
 
-  // Read-only PDF reader: one page at a time, swipe or buttons, no download button
   async function openPdf(l) {
     const stage = $('stage');
     try {
@@ -255,7 +218,6 @@
     } catch (e) { stage.innerHTML = '<span class="muted">Could not load the handout. Make sure you are logged in and enrolled, then refresh the page.</span>'; }
   }
 
-  // Quiz: all questions, unlimited retakes, pass mark unlocks the next module
   function renderQuiz(l, it) {
     clearReader();
     const qs = l.questions || [], pass = l.passMark || 80, best = passed[l.id];
@@ -270,48 +232,4 @@
     $('viewer').innerHTML = html;
 
     $('qSubmit').onclick = async () => {
-      let correct = 0, unanswered = 0; const missed = [];
-      document.querySelectorAll('#quizForm .q').forEach((box, di) => {
-        box.classList.remove('bad');
-        const sel = box.querySelector('input:checked');
-        if (!sel) { unanswered++; return; }
-        if (Number(sel.value) === qs[Number(box.dataset.qi)].a) correct++; else { missed.push(di + 1); box.classList.add('bad'); }
-      });
-      const res = $('qResult');
-      if (unanswered) { res.className = 'result no'; res.textContent = 'Please answer all ' + qs.length + ' questions before you submit. ' + unanswered + ' left.'; return; }
-      const score = Math.round(100 * correct / qs.length);
-      if (score >= pass) {
-        let note = '';
-        if (enrolled) {
-          try { passed[l.id] = Math.max(best || 0, score); if (!done.includes(l.id)) done.push(l.id); await saveProgress(); }
-          catch (e) { note = ' (We could not save your score. Check your connection and submit again.)'; }
-        } else note = ' (Preview mode: scores are not saved.)';
-        const nextMod = mods[mods.indexOf(it.module) + 1];
-        const finished = quizzes.length && quizzes.every(passedQuiz);
-        res.className = 'result ok';
-        res.innerHTML = `<strong>Passed! You scored ${score}% (${correct} of ${qs.length}).</strong>${esc(note)}<br>` +
-          (finished ? 'You have passed every module quiz. Your certificate is ready.' : (nextMod ? 'Module ' + nextMod + ' is now unlocked.' : ''));
-        const row = document.createElement('div'); row.className = 'row';
-        if (finished) row.innerHTML = `<a class="btn" href="certificate.html?id=${encodeURIComponent(cid)}">Get your certificate</a>`;
-        else if (nextMod) { const first = items.find(i => i.module === nextMod); row.innerHTML = '<button class="btn" type="button" id="nextMod">Go to Module ' + nextMod + '</button>'; res.appendChild(row); $('nextMod').onclick = () => first && open(first.id); }
-        if (finished) res.appendChild(row);
-        drawOutline();
-      } else {
-        res.className = 'result no';
-        res.innerHTML = `<strong>You scored ${score}% (${correct} of ${qs.length}). You need ${pass}% to continue.</strong><br>Review these questions: ${missed.join(', ')}. Reread the handout, then try again. You can retake the quiz as many times as you like.`;
-        const row = document.createElement('div'); row.className = 'row';
-        row.innerHTML = '<button class="btn" type="button" id="retry">Try again</button>'; res.appendChild(row);
-        $('retry').onclick = () => { renderQuiz(l, it); window.scrollTo({ top: $('viewer').offsetTop - 80, behavior: 'smooth' }); };
-      }
-      res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-  }
-
-  drawOutline();
-  const first = items.find(accessible);
-  if (first) open(first.id);
-  else $('viewer').innerHTML = '<p class="muted">Select a lesson to begin. Lessons appear here once they are published.</p>';
-})();
-</script>
-</body>
-</html>
+      let correct = 0, unanswered = 0; const missed
