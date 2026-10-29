@@ -3,235 +3,174 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Access | Queen of Art</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Queen of Art | Select Role</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--violet:#3B1C78;--dark:#24104D;--lilac:#EEE6FF;--gold:#FFC93C;--rose:#FF5C8A;--ink:#1E1433}
+:root{
+  --violet:#3B1C78;
+  --violet-dark:#24104D;
+  --lilac:#EEE6FF;
+  --ink:#1E1433;
+  --white:#fff;
+  --head:'Bricolage Grotesque','Trebuchet MS',sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:var(--ink);min-height:100vh;display:grid;place-items:center;padding:24px;line-height:1.5}
-.card{background:#fff;border-radius:26px;padding:34px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
-.brand{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-weight:800;font-size:2rem;letter-spacing:-.02em;color:var(--violet);text-decoration:none;display:inline-block}
-.sub{margin:4px 0 22px;color:#5d4f7e}
-.tabs{display:flex;gap:6px;background:var(--lilac);padding:5px;border-radius:999px;margin-bottom:22px}
-.tabs button{flex:1;border:0;background:transparent;padding:10px;border-radius:999px;font:inherit;font-weight:700;cursor:pointer;color:var(--violet)}
-.tabs button[aria-selected="true"]{background:var(--violet);color:#fff}
-label{display:block;font-weight:700;font-size:.92rem;margin:14px 0 5px}
-input{width:100%;padding:12px 14px;border:2px solid #d7cdef;border-radius:12px;font:inherit}
-input:focus{outline:none;border-color:var(--violet)}
-.go{margin-top:22px;width:100%;padding:14px;border:0;border-radius:999px;background:var(--gold);color:var(--dark);font:inherit;font-weight:700;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
-.go:disabled{opacity:.6;cursor:wait}
-.msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:.93rem;display:none}
-.msg.err{display:block;background:#ffe3ea;color:#8a1236}
-.msg.ok{display:block;background:#e3f7e8;color:#145a2a}
-.link{background:none;border:0;color:var(--violet);font:inherit;text-decoration:underline;cursor:pointer;margin-top:14px}
-.back{display:inline-block;margin-top:18px;color:var(--violet);font-weight:700;text-decoration:none}
-.hide{display:none}
-:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+body{
+  font-family:var(--body);
+  background:var(--violet-dark);
+  color:var(--white);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.top-bar{
+  background:rgba(0,0,0,.25);
+  padding:14px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.top-bar .logo{
+  font-family:var(--head);
+  font-weight:800;
+  font-size:1.3rem;
+  color:inherit;
+  text-decoration:none;
+}
+.top-bar .login-label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:.95rem;
+  opacity:.8
+}
+.top-bar .avatar-s{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:#B89600;
+  color:var(--white);
+  display:grid;
+  place-items:center;
+  font-weight:700;
+}
+main{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 24px;
+}
+.card{
+  background:var(--white);
+  color:var(--ink);
+  border-radius:24px;
+  padding:44px 32px;
+  max-width:520px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 22px 50px rgba(0,0,0,.35);
+}
+h1{
+  font-family:var(--head);
+  font-size:1.9rem;
+  margin-bottom:10px;
+  color:var(--violet);
+}
+.sub{
+  color:#6a5a8c;
+  margin-bottom:36px;
+}
+.choices{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-bottom:28px;
+}
+.choice{
+  border:2px solid var(--lilac);
+  border-radius:16px;
+  padding:28px 16px;
+  cursor:pointer;
+  transition:all .2s;
+  background:transparent;
+}
+.choice:hover{
+  border-color:var(--violet);
+  background:var(--lilac);
+}
+.choice .icon{
+  font-size:1.5rem;
+  margin-bottom:8px;
+}
+.choice h2{
+  font-family:var(--head);
+  font-size:1.1rem;
+  margin-bottom:4px;
+}
+.choice p{
+  font-size:.88rem;
+  color:#6a5a8c;
+  line-height:1.4;
+}
+.cancel{
+  color:#6a5a8c;
+  font-size:.9rem;
+  text-decoration:none;
+  display:inline-block;
+  margin-top:8px;
+}
+.cancel:hover{
+  color:var(--violet);
+  text-decoration:underline;
+}
+
+@media(max-width:480px){
+  .choices{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
-<div class="card">
-  <a href="index.html" class="brand">Queen of Art</a>
-  <p class="sub" id="pageSub">Sign in to your account</p>
 
-  <!-- Signed-out view -->
-  <div id="auth">
-    <div class="tabs" role="tablist" id="tabsRow">
-      <button role="tab" id="tabReg" aria-selected="false">Register</button>
-      <button role="tab" id="tabLog" aria-selected="true">Log in</button>
-    </div>
-
-    <!-- STUDENT Registration -->
-    <form id="regForm" novalidate class="hide">
-      <label for="rName">Full name</label>
-      <input id="rName" autocomplete="name" required>
-      <label for="rEmail">Email</label>
-      <input id="rEmail" type="email" autocomplete="email" required>
-      <label for="rPass">Password (at least 8 characters)</label>
-      <input id="rPass" type="password" autocomplete="new-password" minlength="8" required>
-      <label for="rPass2">Confirm password</label>
-      <input id="rPass2" type="password" autocomplete="new-password" required>
-      <button class="go" type="submit">Create Student Account</button>
-    </form>
-
-    <!-- Login -->
-    <form id="logForm" novalidate>
-      <label for="lEmail">Email</label>
-      <input id="lEmail" type="email" autocomplete="email" required>
-      <label for="lPass">Password</label>
-      <input id="lPass" type="password" autocomplete="current-password" required>
-      <button class="go" type="submit">Log in</button>
-      <button class="link" type="button" id="forgot">Reset my password</button>
-    </form>
+<div class="top-bar">
+  <a class="logo" href="index.html">Queen of Art</a>
+  <div class="login-label">
+    <span class="avatar-s">S</span>
+    <span>Student login</span>
   </div>
-
-  <!-- Signed-in view — HIDDEN NOW, REDIRECTS INSTEAD ✅ -->
-  <div id="inside" class="hide">
-    <h2 id="hello" style="font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px"></h2>
-    <p id="roleNote" style="margin-bottom:16px"></p>
-    <a class="go" id="gotoLink" style="margin-bottom:12px">Go to Dashboard</a>
-    <button class="go" id="logout" type="button">Log out</button>
-  </div>
-
-  <div id="msg" class="msg" role="status" aria-live="polite"></div>
-  
-  <a href="index.html" class="back">← Back to homepage</a>
 </div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<main>
+  <div class="card">
+    <h1>Welcome Back</h1>
+    <p class="sub">Select your role to continue</p>
+    <div class="choices">
+      <button class="choice" id="studentBtn">
+        <div class="icon">🎓</div>
+        <h2>Student</h2>
+        <p>Log in to your courses</p>
+      </button>
+      <button class="choice" id="adminBtn">
+        <div class="icon">👑</div>
+        <h2>Admin</h2>
+        <p>Manage accounts & content</p>
+      </button>
+    </div>
+    <a class="cancel" href="index.html">Cancel — continue browsing</a>
+  </div>
+</main>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
-  authDomain: "queen-of-art.firebaseapp.com",
-  projectId: "queen-of-art",
-  storageBucket: "queen-of-art.firebasestorage.app",
-  messagingSenderId: "681441268668",
-  appId: "1:681441268668:web:ef7e01b245bb96995291b9"
-};
-
-const $ = id => document.getElementById(id);
-const msg = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
-const clear = () => { $('msg').className = 'msg'; };
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-
-// ✅ ADMIN EMAILS LIST
-const ADMIN_EMAILS = [
-  "almirabagro12@gmail.com",
-  "mira.graphicsfreelancer@gmail.com"
-];
-const isAdminEmail = (email) => ADMIN_EMAILS.some(admin => admin.toLowerCase() === email.toLowerCase());
-
-const urlParams = new URLSearchParams(window.location.search);
-const role = urlParams.get('role') || 'student';
-
-function friendly(e){
-  const c = e.code || '';
-  if (c.includes('email-already-in-use')) return 'This email already has an account. Try logging in.';
-  if (c.includes('invalid-email')) return 'Enter a valid email address.';
-  if (c.includes('weak-password')) return 'Choose a password with at least 8 characters.';
-  if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'Email or password is incorrect.';
-  if (c.includes('too-many-requests')) return 'Too many attempts. Wait a few minutes and try again.';
-  return 'Something went wrong. Check your connection and try again.';
-}
-
-function show(tab){
-  const reg = tab === 'reg';
-  $('regForm').classList.toggle('hide', !reg);
-  $('logForm').classList.toggle('hide', reg);
-  $('tabReg').setAttribute('aria-selected', reg);
-  $('tabLog').setAttribute('aria-selected', !reg);
-  clear();
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  if (role === 'admin') {
-    $('pageSub').textContent = 'Admin — Sign In Only';
-    $('tabsRow').classList.add('hide');
-    $('regForm').classList.add('hide');
-    $('logForm').classList.remove('hide');
-  } else {
-    $('pageSub').textContent = 'Student — Register or Sign In';
-    $('tabsRow').classList.remove('hide');
-    show('log');
-  }
+document.getElementById('studentBtn').addEventListener('click', () => {
+  window.location.href = 'login.html';
 });
-
-$('tabReg').onclick = () => show('reg');
-$('tabLog').onclick = () => show('log');
-
-$('regForm').onsubmit = async e => {
-  e.preventDefault(); clear();
-  
-  const name = $('rName').value.trim();
-  const email = $('rEmail').value.trim().toLowerCase();
-  const p1 = $('rPass').value, p2 = $('rPass2').value;
-
-  if (isAdminEmail(email)) {
-    return msg('This is an Admin account — please use Log In.');
-  }
-  
-  if (!name) return msg('Enter your full name.');
-  if (p1.length < 8) return msg('Choose a password with at least 8 characters.');
-  if (p1 !== p2) return msg('The two passwords do not match.');
-  
-  const btn = e.submitter; btn.disabled = true;
-  try {
-    const cred = await auth.createUserWithEmailAndPassword(email, p1);
-    await cred.user.updateProfile({ displayName: name });
-    await cred.user.sendEmailVerification();
-    
-    const userRef = db.collection("users").doc(email);
-    const existing = await userRef.get();
-    if (!existing.exists) {
-      await userRef.set({
-        fullName: name,
-        email: email,
-        payment: "Pending",
-        courses: []
-      });
-    }
-    
-    msg('Account created! Verification link sent to your email.', true);
-  } catch (err) { 
-    console.error(err);
-    msg(friendly(err)); 
-  }
-  btn.disabled = false;
-};
-
-$('logForm').onsubmit = async e => {
-  e.preventDefault(); clear();
-  const btn = e.submitter; btn.disabled = true;
-  try { 
-    await auth.signInWithEmailAndPassword($('lEmail').value.trim(), $('lPass').value); 
-  } catch (err) { msg(friendly(err)); }
-  btn.disabled = false;
-};
-
-$('forgot').onclick = async () => {
-  clear();
-  const email = $('lEmail').value.trim();
-  if (!email) return msg('Type your email above, then select Reset my password.');
-  try { 
-    await auth.sendPasswordResetEmail(email); 
-    msg('Password reset link sent. Check your inbox.', true); 
-  } catch (err) { msg(friendly(err)); }
-};
-
-$('logout').onclick = async () => {
-  try {
-    await auth.signOut();
-    window.location.href = "index.html";
-  } catch (err) {
-    console.error("Logout error:", err);
-  }
-};
-
-// ✅ INSTANT REDIRECT — NO INTERMEDIATE PAGE ✅
-auth.onAuthStateChanged(u => {
-  if (!u) {
-    $('auth').classList.remove('hide');
-    $('inside').classList.add('hide');
-    return;
-  }
-
-  // User IS logged in — redirect immediately
-  if (isAdminEmail(u.email.toLowerCase())) {
-    // Admin → admin page
-    window.location.href = "admin.html";
-  } else {
-    // NOT admin → directly to courses section ✅
-    window.location.href = "index.html#courses";
-  }
+document.getElementById('adminBtn').addEventListener('click', () => {
+  window.location.href = 'admin.html';
 });
 </script>
+
 </body>
 </html>
