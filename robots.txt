@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://queen-of-art.elearninghub.workers.dev/sitemap.xml
