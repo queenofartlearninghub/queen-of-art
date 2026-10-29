@@ -172,7 +172,113 @@ footer a:hover{color:var(--marigold)}
   section{padding:60px 0}
   nav{gap:12px}
 }
+.store-dropdown {
+  position: relative;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: .95rem;
+  padding-bottom: 12px;
+  display: inline-block; /* Keeps it inline with other links */
+}
+.store-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  min-width: 200px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  border-radius: 10px;
+  padding: 8px 0;
+  margin-top: 0;
+  z-index: 9999;
+  color: var(--ink);
+}
+.store-dropdown {
+  position: relative;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: .95rem;
+  padding-bottom: 12px;
+  display: inline-block;
+}
+.store-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  min-width: 200px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  border-radius: 10px;
+  padding: 8px 0;
+  margin-top: 0;
+  z-index: 9999;
+  color: var(--ink);
+}
+.store-dropdown {
+  position: relative;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: .95rem;
+  padding-bottom: 0; /* Removed extra bottom space */
+  display: flex;
+  align-items: center;
+}
+.store-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  min-width: 200px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+  border-radius: 10px;
+  padding: 8px 0;
+  margin-top: 4px;
+  z-index: 9999;
+  color: var(--ink);
+}
+.store-dropdown:hover .store-menu {
+  display: block;
+}
+.store-menu a {
+  display: block;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+.store-menu a:hover {
+  background: var(--lilac);
+}
+.bar {
+  flex-wrap: nowrap;
+  width: 100%;
+}
+nav {
+  display: flex;
+  gap: 24px; /* Even spacing — adjust if needed */
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-left: auto; /* Pushes all nav to the right */
+}
+nav a, .store-dropdown {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  nav {
+    gap: 16px !important;
+  }
+}
+@media (max-width: 768px) {
+  .bar {
+    flex-wrap: wrap !important;
+  }
+}
 </style>
+
 </head>
 <body>
 
@@ -182,11 +288,17 @@ footer a:hover{color:var(--marigold)}
     <nav aria-label="Main">
       <a href="#courses">Courses</a>
       <a href="#pricing">Pricing</a>
-      <a href="https://queenofart-disenyo.myshopify.com">Store</a>
+      <div class="store-dropdown">
+        <span>Store ▾</span>
+        <div class="store-menu">
+          <a href="https://queenofart-disenyo.myshopify.com" target="_blank">🛍️ Shopify</a>
+          <a href="https://www.tiktok.com/@disenyocrafts" target="_blank">🎵 TikTok Shop</a>
+          <a href="https://www.facebook.com/profile.php?id=61594094747305" target="_blank">📘 Facebook Shop</a>
+        </div>
+      </div>
       <a href="#mentors">Mentors</a>
       <a href="#tools">Tools</a>
       <a href="#contact">Contact</a>
-      <a href="courses.html">Learning hub</a>
       <a href="register.html" id="loginLink">Log-in</a>
       <div class="acct hide" id="acct">
         <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
@@ -194,6 +306,7 @@ footer a:hover{color:var(--marigold)}
         </button>
         <div class="menu hide" id="acctMenu">
           <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+          <a href="courses.html">Learning Hub</a>
           <a href="profile.html">My Profile</a>
           <a href="payment.html">Payment Terms</a>
           <a href="privacy.html">Privacy Policy</a>
@@ -203,7 +316,6 @@ footer a:hover{color:var(--marigold)}
     </nav>
   </div>
 </header>
-
 <main id="top">
 <div class="hero">
   <div class="wrap">
