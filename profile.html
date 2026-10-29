@@ -54,12 +54,11 @@ ul.courses li{background:var(--lilac);border-left:6px solid var(--rose);padding:
 
 <main class="card" id="card">
   <h1>My Profile</h1>
-
   <div class="row">
     <div>
       <div class="photo" id="photoBox">No photo yet</div>
       <div class="cap">2x2 ID photo (square, plain background)</div>
-      <input type="file" id="file" accept="image/*" class="hide">
+      <input type="file" id="file" accept="image/*,.jpg,.jpeg,.png" class="hide">
       <button class="btn" type="button" id="pick">Upload photo</button>
     </div>
     <div>
@@ -100,30 +99,46 @@ const firebaseConfig = {
   messagingSenderId: "681441268668",
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
-firebase.initializeApp(firebaseConfig);
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.firestore();
 const auth = firebase.auth();
+
 const $ = id => document.getElementById(id);
-const say = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
+const say = (t, ok) => {
+  const m = $('msg');
+  m.textContent = t;
+  m.className = 'msg ' + (ok ? 'ok' : 'err');
+  console.log('Message:', t);
+};
+
 const DEFAULT_PAY = 'No payment recorded yet';
 let ref = null;
 const titles = {};
 
 function showPhoto(src){
   const box = $('photoBox');
-  box.textContent = '';
-  if (src) { const i = new Image(); i.src = src; i.alt = 'Your 2x2 ID photo'; box.appendChild(i); }
-  else box.textContent = 'No photo yet';
+  box.innerHTML = '';
+  if (src) {
+    const i = new Image();
+    i.src = src;
+    i.alt = 'Your 2x2 ID photo';
+    box.appendChild(i);
+  } else {
+    box.textContent = 'No photo yet';
+  }
 }
 
 function render(d){
   $('fullName').value = d.fullName || '';
   showPhoto(d.photo);
-  const list = $('courses'); list.innerHTML = '';
+  const list = $('courses');
+  list.innerHTML = '';
   (d.courses || []).forEach(c => {
     const li = document.createElement('li');
-    if (titles[c]) { const a = document.createElement('a'); a.href = 'course.html?id=' + encodeURIComponent(c); a.textContent = titles[c]; a.style.color = 'inherit'; li.appendChild(a); }
-    else li.textContent = c;
+    li.textContent = titles[c] || c;
     list.appendChild(li);
   });
   $('noCourses').classList.toggle('hide', (d.courses || []).length > 0);
@@ -131,7 +146,6 @@ function render(d){
 }
 
 async function loadProfile(user) {
-  // The email (lowercase) is the document key everywhere on the site
   const userId = (user.email || '').toLowerCase();
   $('email').textContent = user.email;
   ref = db.collection('users').doc(userId);
@@ -148,83 +162,74 @@ async function loadProfile(user) {
       });
       snap = await ref.get();
     }
-
     try {
       const cs = await db.collection('catalog').where('published', '==', true).get();
       cs.forEach(x => titles[x.id] = x.data().title);
     } catch (e) {}
-
-    const data = snap.data();
-    if (!data.email) ref.update({ email: userId }).catch(() => {});
-    render(data);
+    render(snap.data());
   } catch (e) {
-    $('pay').textContent = 'Could not load.';
-    say('Could not load your profile' + (e && e.code ? ' (' + e.code + ')' : '') + '. Please try again, or contact Queen of Art if it keeps happening.');
+    say('Load error: ' + (e?.code || e?.message));
   }
 }
 
-// ===== Firebase login =====
 auth.onAuthStateChanged(user => {
   if (!user) { location.href = 'login.html?next=profile.html'; return; }
   loadProfile(user);
 });
 
-// Photo: crop to a centered square, shrink to 400x400, save as JPEG
 function squarePhoto(file){
   return new Promise((res, rej) => {
-    const img = new Image(), url = URL.createObjectURL(file);
+    const img = new Image();
+    const url = URL.createObjectURL(file);
     img.onload = () => {
-      const s = Math.min(img.width, img.height), c = document.createElement('canvas');
+      const s = Math.min(img.width, img.height);
+      const c = document.createElement('canvas');
       c.width = c.height = 400;
-      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 400, 400);
+      c.getContext('2d').drawImage(img, (img.width-s)/2, (img.height-s)/2, s, s, 0, 0, 400, 400);
       URL.revokeObjectURL(url);
       res(c.toDataURL('image/jpeg', 0.82));
     };
-    img.onerror = () => rej(new Error('bad image'));
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Bad image')); };
     img.src = url;
   });
 }
 
-$('pick').onclick = () => $('file').click();
-$('file').onchange = async e => {
-  const f = e.target.files[0]; if (!f || !ref) return;
-  if (!f.type.startsWith('image/')) return say('Please choose an image file.');
-  $('pick').disabled = true;
-  try {
-    const data = await squarePhoto(f);
-    await ref.update({ photo: data });
-    showPhoto(data);
-    say('Photo saved.', true);
-  } catch (err) {
-    say(err && err.code === 'permission-denied'
-      ? 'The photo could not be saved. Publish the latest Firestore rules in Firebase, then try again.'
-      : 'Could not save the photo. Try a different image.');
-  }
-  $('pick').disabled = false;
-  e.target.value = '';
-};
+document.addEventListener('DOMContentLoaded', () => {
+  $('pick').onclick = () => $('file').click();
+  $('file').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f || !ref) return;
+    if (!f.type.startsWith('image/')) return say('Choose an image file');
+    $('pick').disabled = true;
+    try {
+      const data = await squarePhoto(f);
+      await ref.update({ photo: data });
+      showPhoto(data);
+      say('✅ Photo saved!', true);
+    } catch (err) {
+      say(err?.code === 'permission-denied' 
+        ? '⚠️ Update Firestore Rules — see Step 2' 
+        : 'Error: ' + (err?.message || 'Try again'));
+    }
+    $('pick').disabled = false;
+    e.target.value = '';
+  };
 
-$('saveName').onclick = async () => {
-  const name = $('fullName').value.trim();
-  if (!name) return say('Enter your full name.');
-  if (!ref) return;
-  $('saveName').disabled = true;
-  try {
-    await ref.update({ fullName: name });
-    try { await auth.currentUser.updateProfile({ displayName: name }); } catch (x) {}
-    say('Name saved.', true);
-  } catch (err) {
-    say(err && err.code === 'permission-denied'
-      ? 'Your name could not be saved. Publish the latest Firestore rules in Firebase, then try again.'
-      : 'Could not save your name. Try again.');
-  }
-  $('saveName').disabled = false;
-};
+  $('saveName').onclick = async () => {
+    const name = $('fullName').value.trim();
+    if (!name) return say('Enter your name');
+    $('saveName').disabled = true;
+    try {
+      await ref.update({ fullName: name });
+      say('✅ Name saved', true);
+    } catch (err) {
+      say(err?.code === 'permission-denied' ? '⚠️ Update Firestore Rules' : 'Error saving name');
+    }
+    $('saveName').disabled = false;
+  };
 
-$('logout').onclick = () => {
-  auth.signOut().then(() => { location.href = 'index.html'; });
-};
+  $('logout').onclick = () => auth.signOut().then(() => location.href = 'index.html');
+});
 </script>
-
 </body>
 </html>
