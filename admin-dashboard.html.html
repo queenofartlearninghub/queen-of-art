@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin | Queen of Art</title>
+<link
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap"
+  rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+/* Account button and dropdown in the top bar */
+.hide{display:none!important}
+.acct{position:relative;display:inline-block}
+#acctBtn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 14px 4px 4px;font:inherit;font-weight:600;cursor:pointer}
+#acctBtn .av{width:30px;height:30px;border-radius:50%;background:var(--marigold,#f5b800);color:#2a1157;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.acct .menu{position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:#fff;color:#1b1030;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);padding:8px;z-index:50;text-align:left}
+.acct .menu .who{display:flex;flex-direction:column;padding:8px 10px;border-bottom:1px solid #eee;margin-bottom:6px}
+.acct .menu .who span{font-size:.85rem;color:#666;word-break:break-all}
+.acct .menu a,.acct .menu button{display:block;width:100%;text-align:left;padding:8px 10px;border:0;background:none;color:#1b1030;font:inherit;border-radius:8px;cursor:pointer;text-decoration:none}
+.acct .menu a:hover,.acct .menu button:hover{background:#f0e9ff}
+</style>
+</head>
+<body>
+<header id="top"></header>
+
+<div class="hero2"><div class="wrap"><h1>Admin</h1><p>Create courses and lessons, and unlock courses for students after payment.</p></div></div>
+
+<main class="wrap pad" id="gate"><p class="muted">Checking your access...</p></main>
+
+<main class="wrap pad hide" id="app">
+  <div class="tabs" style="margin-top:0">
+    <button type="button" class="on" id="tabC">Courses</button>
+    <button type="button" id="tabS">Students</button>
+  </div>
+
+  <section id="paneC">
+    <div class="layout">
+      <aside class="side">
+        <h3>Courses</h3>
+        <div id="clist"></div>
+        <div class="row">
+          <button class="btn sm" type="button" id="newC">New course</button>
+          <button class="btn sm line" type="button" id="sample">Add sample course</button>
+        </div>
+      </aside>
+      <div id="editor"><div class="note">Select a course on the left, or click New course.</div></div>
+    </div>
+  </section>
+
+  <section id="paneS" class="hide">
+    <label for="search">Search students</label>
+    <input id="search" placeholder="Type a name or email">
+    <div class="chips" id="sfilters" style="margin-top:14px;margin-bottom:0"></div>
+    <div id="slist" style="margin-top:18px"></div>
+  </section>
+</main>
+
+<div class="wrap" style="padding-bottom:40px"><div id="amsg" class="msg hide"></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== Helpers ===== */
+const $ = id => document.getElementById(id);
+const esc = t => (t == null ? '' : String(t)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+const safeUrl = u => /^https?:\/\//.test(u);
+
+/* ===== Firebase ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
+  authDomain: "queen-of-art.firebaseapp.com",
+  projectId: "queen-of-art",
+  storageBucket: "queen-of-art.firebasestorage.app",
+  messagingSenderId: "681441268668",
+  appId: "1:681441268668:web:ef7e01b245bb96995291b9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+/* Convenience check only. The REAL protection is your Firestore rules. */
+const ALLOWED_ADMIN_EMAILS = ['almirabagro12@gmail.com'];
+
+const LEVELS = ['Canva', 'Basic', 'Intermediate', 'Advanced'];
+const MAX_BYTES = 15 * 1024 * 1024, CHUNK = 800000;
+let courses = [], cur = null, lessonList = [], editingLesson = null, students = [];
+let panelReady = false;
+
+function fail(what, e) {
+  const code = e && e.code ? ' (' + e.code + ')' : '';
+  const hint = e && e.code === 'permission-denied'
+    ? ' Firestore blocked this. Publish the latest rules, check that the admin UID in the rules matches your Firebase login, then log out and log in again.'
+    : '';
+  flash(what + code + hint);
+}
+function flash(text, ok) { const m = $('amsg'); m.textContent = text; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
+
+/* ===== Top bar (built once) ===== */
+function renderTopbar() {
+  $('top').innerHTML = `
+  <div class="bar">
+    <a class="logo" href="index.html">Queen of Art</a>
+    <nav aria-label="Main">
+      <a href="index.html#courses">Courses</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="index.html#mentors">Mentors</a>
+      <a href="index.html#tools">Tools</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="courses.html">Learning hub</a>
+      <a href="admin.html" style="font-weight:bold;color:var(--marigold)">Admin</a>
+      <div class="acct hide" id="acct">
+        <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
+          <span class="av" id="avatar">A</span><span id="acctName">Admin</span>
+        </button>
+        <div class="menu hide" id="acctMenu">
+          <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+          <a href="profile.html">My profile</a>
+          <button type="button" id="navLogout">Log out</button>
+        </div>
+      </div>
+    </nav>
+  </div>`;
+
+  const closeMenu = () => { $('acctMenu').classList.add('hide'); $('acctBtn').setAttribute('aria-expanded', 'false'); };
+  $('acctBtn').onclick = e => {
+    e.stopPropagation();
+    const open = $('acctMenu').classList.toggle('hide') === false;
+    $('acctBtn').setAttribute('aria-expanded', open);
+  };
+  document.addEventListener('click', e => { if (!$('acct').contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  $('navLogout').onclick = () => auth.signOut();
+}
+function setTopbarUser(user) {
+  if (!user) { $('acct').classList.add('hide'); return; }
+  const name = user.displayName || (user.email || 'Admin').split('@')[0];
+  $('avatar').textContent = name.trim().charAt(0).toUpperCase();
+  $('acctName').textContent = name.trim().split(' ')[0];
+  $('menuName').textContent = name;
+  $('menuEmail').textContent = user.email || '';
+  $('acct').classList.remove('hide');
+}
+
+/* ===== Login gate (Firebase Auth) ===== */
+function showLogin(message) {
+  $('app').classList.add('hide');
+  $('gate').classList.remove('hide');
+  $('gate').innerHTML = `
+    <div class="panel" style="max-width:420px">
+      <h2>Admin log in</h2>
+      ${message ? '<div class="note" style="margin-bottom:12px">' + esc(message) + '</div>' : ''}
+      <label for="lgEmail">Email</label>
+      <input id="lgEmail" type="email" autocomplete="username">
+      <label for="lgPass">Password</label>
+      <input id="lgPass" type="password" autocomplete="current-password">
+      <div class="row"><button class="btn" type="button" id="lgBtn">Log in</button></div>
+      <p class="muted" id="lgErr" style="margin-top:10px"></p>
+    </div>`;
+  const go = async () => {
+    const email = $('lgEmail').value.trim(), pass = $('lgPass').value;
+    if (!email || !pass) { $('lgErr').textContent = 'Enter your email and password.'; return; }
+    $('lgBtn').disabled = true; $('lgErr').textContent = 'Logging in...';
+    try { await auth.signInWithEmailAndPassword(email, pass); }
+    catch (e) { $('lgErr').textContent = 'Could not log in (' + (e.code || 'error') + ').'; $('lgBtn').disabled = false; }
+  };
+  $('lgBtn').onclick = go;
+  $('lgPass').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+auth.onAuthStateChanged(user => {
+  setTopbarUser(user);
+  if (!user) { panelReady = false; showLogin(); return; }
+  const email = (user.email || '').trim().toLowerCase();
+  if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
+    panelReady = false;
+    $('app').classList.add('hide');
+    $('gate').classList.remove('hide');
+    $('gate').innerHTML = '<div class="note">Access denied. Only the site administrator can view this page. <a href="#" id="denyOut">Log out</a></div>';
+    $('denyOut').onclick = e => { e.preventDefault(); auth.signOut(); };
+    return;
+  }
+  showAdminPanel();
+});
+
+function showAdminPanel() {
+  $('gate').classList.add('hide');
+  $('app').classList.remove('hide');
+  if (panelReady) return;
+  panelReady = true;
+
+  $('tabC').onclick = () => tab('C');
+  $('tabS').onclick = () => tab('S');
+  $('newC').onclick = () => { cur = null; editingLesson = null; drawCourseList(); renderEditor(null); };
+  $('sample').onclick = addSample;
+  $('search').oninput = drawStudents;
+  loadCourses();
+}
+
+function tab(t) {
+  $('paneC').classList.toggle('hide', t !== 'C'); $('paneS').classList.toggle('hide', t !== 'S');
+  $('tabC').classList.toggle('on', t === 'C'); $('tabS').classList.toggle('on', t === 'S');
+  if (t === 'S') loadStudents();
+}
+
+renderTopbar();
+
+/* ---------- Courses ---------- */
+async function loadCourses() {
+  try {
+    const s = await db.collection('catalog').get();
+    courses = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0));
+  } catch (e) { fail('Could not load courses. Check that your Firestore rules are published.', e); return; }
+  drawCourseList();
+}
+function drawCourseList() {
+  $('clist').innerHTML = courses.map(c => `<button type="button" class="item ${c.id === cur ? 'on' : ''}" data-id="${esc(c.id)}">${esc(c.title || c.id)}<small>${c.published ? 'Published' : 'Draft'} - ${esc(c.level || '')}</small></button>`).join('') || '<p class="muted">No courses yet.</p>';
+  $('clist').querySelectorAll('.item').forEach(b => b.onclick = () => selectCourse(b.dataset.id));
+}
+async function selectCourse(id) {
+  cur = id; editingLesson = null; drawCourseList();
+  renderEditor(courses.find(c => c.id === id));
+  try { await loadLessons(); } catch (e) { fail('Could not load the lessons.', e); }
+}
+function renderEditor(c) {
+  const isNew = !c; c = c || { level: 'Basic', published: false, order: courses.length + 1 };
+  $('editor').innerHTML = `<div class="panel">
+    <h2>${isNew ? 'New course' : 'Edit course'}</h2>
+    <label for="cId">Course ID (small letters, numbers, dashes)</label>
+    <input id="cId" value="${esc(c.id || '')}" ${isNew ? '' : 'disabled'} placeholder="canva-module-1">
+    <label for="cTitle">Title</label><input id="cTitle" value="${esc(c.title || '')}">
+    <label for="cLevel">Level</label><select id="cLevel">${LEVELS.map(l => `<option ${l === c.level ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <label for="cSummary">Short description</label><textarea id="cSummary" rows="3">${esc(c.summary || '')}</textarea>
+    <label for="cCert">Certificate title (shown on the certificate, different from the module title)</label><input id="cCert" value="${esc(c.certTitle || '')}" placeholder="Canva Essentials Certificate">
+    <label for="cCertText">What the student can do (one sentence, shown on the certificate)</label><textarea id="cCertText" rows="3" placeholder="navigate the Canva dashboard, start designs from templates, and save and export work in the right file format.">${esc(c.certText || '')}</textarea>
+    <label for="cPrice">Price shown on the course page</label><input id="cPrice" value="${esc(c.price || '')}" placeholder="₱99">
+    <label for="cCategory">Category</label>
+    <select id="cCategory">
+      <option value="Career Templates" ${c.category === 'Career Templates' ? 'selected' : ''}>Career Templates</option>
+      <option value="Beginner ₱99" ${c.category === 'Beginner ₱99' ? 'selected' : ''}>Beginner ₱99</option>
+      <option value="Intermediate ₱199" ${c.category === 'Intermediate ₱199' ? 'selected' : ''}>Intermediate ₱199</option>
+      <option value="Advanced ₱299" ${c.category === 'Advanced ₱299' ? 'selected' : ''}>Advanced ₱299</option>
+      <option value="Certification ₱499" ${c.category === 'Certification ₱499' ? 'selected' : ''}>Certification ₱499</option>
+      <option value="Premium ₱999" ${c.category === 'Premium ₱999' ? 'selected' : ''}>Premium ₱999</option>
+    </select>
+    <label for="cOrder">Order in the list</label><input id="cOrder" type="number" value="${esc(c.order || 1)}">
+    <label class="chk"><input id="cPub" type="checkbox" ${c.published ? 'checked' : ''}> Published (visible to students)</label>
+    <div class="row"><button class="btn" type="button" id="saveC">Save course</button>${isNew ? '' : '<button class="btn line" type="button" id="delC">Delete course</button>'}</div>
+  </div><div id="lessonsBox"></div>`;
+  $('saveC').onclick = saveCourse;
+  if (!isNew) $('delC').onclick = deleteCourse;
+}
+async function saveCourse() {
+  const id = $('cId').value.trim();
+  if (!/^[a-z0-9-]{3,60}$/.test(id)) return flash('Course ID must be 3 to 60 characters: small letters, numbers, and dashes only.');
+  const title = $('cTitle').value.trim();
+  if (!title) return flash('Enter a course title.');
+  try {
+    await db.collection('catalog').doc(id).set({
+      title,
+      level: $('cLevel').value,
+      category: $('cCategory').value,
+      summary: $('cSummary').value.trim(),
+      price: $('cPrice').value.trim(),
+      certTitle: $('cCert').value.trim(),
+      certText: $('cCertText').value.trim(),
+      order: Number($('cOrder').value) || 1,
+      published: $('cPub').checked
+    }, { merge: true });
+  } catch (e) { return fail('Could not save the course.', e); }
+  flash('Course saved.', true);
+  try { await loadCourses(); await selectCourse(id); } catch (e) { fail('The course was saved, but the page could not refresh.', e); }
+}
+async function deleteCourse() {
+  if (!confirm('Delete this course, its lessons, and its uploaded files? This cannot be undone.')) return;
+  try {
+    const ref = db.collection('catalog').doc(cur);
+    const fs = await ref.collection('files').get();
+    for (const f of fs.docs) await deleteFile(cur, f.id);
+    const ls = await ref.collection('lessons').get();
+    const b = db.batch(); ls.forEach(d => b.delete(d.ref)); b.delete(ref); await b.commit();
+    cur = null; flash('Course deleted.', true); await loadCourses(); $('editor').innerHTML = '<div class="note">Select a course on the left, or click New course.</div>';
+  } catch (e) { fail('Could not delete the course.', e); }
+}
+
+/* ---------- Lessons ---------- */
+const byModule = (a, b) => (a.module || 1) - (b.module || 1) || (a.order || 0) - (b.order || 0);
+const TYPE_NAMES = { module: 'Module page (handout + download + quiz in one lesson)', text: 'Text lesson', video: 'Video', link: 'Link', file: 'Downloadable file only', pdf: 'PDF handout only (read online)', quiz: 'Quiz only' };
+
+async function loadLessons() {
+  const s = await db.collection('catalog').doc(cur).collection('lessons').get();
+  lessonList = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byModule);
+  renderLessons();
+}
+
+function quizToText(qs) {
+  return (qs || []).map((q, i) => (i + 1) + '. ' + q.q + '\n' + q.options.map((o, j) => String.fromCharCode(65 + j) + '. ' + o).join('\n') + '\nAnswer: ' + String.fromCharCode(65 + q.a)).join('\n\n');
+}
+function parseQuiz(text) {
+  const blocks = text.trim().split(/\n\s*\n/).filter(b => b.trim());
+  if (!blocks.length) throw new Error('Paste your quiz questions in the quiz box.');
+  return blocks.map((b, bi) => {
+    const lines = b.split('\n').map(x => x.trim()).filter(Boolean);
+    const q = lines.shift().replace(/^\d+[.)]\s*/, '');
+    const options = []; let ans = -1;
+    lines.forEach(ln => {
+      let m = ln.match(/^answer\s*[:\-]\s*([A-Za-z])/i);
+      if (m) { ans = m[1].toUpperCase().charCodeAt(0) - 65; return; }
+      m = ln.match(/^([A-Za-z])[.)]\s*(.+)$/);
+      if (m) options.push(m[2].trim());
+    });
+    if (!q) throw new Error('Question ' + (bi + 1) + ' has no question text.');
+    if (options.length < 2) throw new Error('Question ' + (bi + 1) + ' needs at least 2 options (A., B., C., ...).');
+    if (ans < 0 || ans >= options.length) throw new Error('Question ' + (bi + 1) + ' needs a line like "Answer: B" that matches one of its options.');
+    return { q, options, a: ans };
+  });
+}
+
+function lessonSummary(x) {
+  if (x.type === 'module') {
+    const parts = [];
+    if (x.pdfId) parts.push('handout');
+    if (x.dlId) parts.push('download');
+    if ((x.questions || []).length) parts.push('quiz (' + x.questions.length + ' questions, pass ' + (x.passMark || 80) + '%)');
+    return 'Module page: ' + (parts.join(', ') || 'text only');
+  }
+  return (TYPE_NAMES[x.type] || x.type) + (x.type === 'quiz' ? ' - ' + (x.questions || []).length + ' questions, pass ' + (x.passMark || 80) + '%' : '');
+}
+
+function renderLessons() {
+  const lastMod = lessonList.length ? (lessonList[lessonList.length - 1].module || 1) : 1;
+  const l = lessonList.find(x => x.id === editingLesson) || { type: 'module', published: true, preview: false, order: lessonList.length + 1, module: lastMod };
+  const curFile = (name, size) => name ? '<p class="muted" style="margin-top:6px">Current file: ' + esc(name) + ' (' + fmtSize(size || 0) + '). Choose a new file to replace it.</p>' : '';
+  $('lessonsBox').innerHTML = `<div class="panel">
+    <h2>Lessons</h2>
+    ${lessonList.map(x => `<div class="lrow"><div><strong>Module ${esc(x.module || 1)} - ${esc(x.order)}. ${esc(x.title)}</strong><div class="muted" style="font-size:.85rem">${esc(lessonSummary(x))}${x.preview ? ' - free preview' : ''}${x.published ? '' : ' - draft'}</div></div>
+      <div class="row" style="margin:0"><button class="btn sm line" type="button" data-e="${esc(x.id)}">Edit</button><button class="btn sm line" type="button" data-d="${esc(x.id)}">Delete</button></div></div>`).join('') || '<p class="muted">No lessons yet.</p>'}
+  </div>
+  <div class="panel">
+    <h2>${editingLesson ? 'Edit lesson' : 'Add a lesson'}</h2>
+    <label for="lModule">Module number (1 to 10)</label><input id="lModule" type="number" min="1" max="50" value="${esc(l.module || 1)}">
+    <label for="lTitle">Lesson title</label><input id="lTitle" value="${esc(l.title || '')}" placeholder="Module 01: Getting Started with Canva">
+    <label for="lType">Type</label><select id="lType">
+      ${Object.keys(TYPE_NAMES).map(k => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${TYPE_NAMES[k]}</option>`).join('')}</select>
+
+    <div id="moduleBox" class="${l.type === 'module' ? '' : 'hide'}">
+      <label for="lMPdf">PDF handout (students read it on the page and cannot download it, up to 15 MB)</label>
+      <input type="file" id="lMPdf" accept=".pdf">${curFile(l.pdfName, l.pdfSize)}
+      <label for="lMDl">Slides to download, such as a PPTX (up to 15 MB)</label>
+      <input type="file" id="lMDl" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3">${curFile(l.dlName, l.dlSize)}
+    </div>
+
+    <div id="fileBox" class="${l.type === 'file' || l.type === 'pdf' ? '' : 'hide'}">
+      <label for="lFile" id="lFileLabel">Upload a file</label>
+      <input type="file" id="lFile">${curFile(l.fileName, l.fileSize)}
+    </div>
+
+    <div id="urlBox" class="${l.type === 'video' || l.type === 'link' || l.type === 'module' ? '' : 'hide'}">
+      <label for="lUrl" id="lUrlLabel">Link (for video or handout)</label><input id="lUrl" value="${esc(l.url || '')}" placeholder="https://...">
+    </div>
+
+    <div id="quizBox" class="${l.type === 'quiz' || l.type === 'module' ? '' : 'hide'}">
+      <label for="lQuiz" id="lQuizLabel">Quiz questions (aim for 10)</label>
+      <textarea id="lQuiz" rows="16" placeholder="1. Your question here?&#10;A. First option&#10;B. Second option&#10;C. Third option&#10;D. Fourth option&#10;Answer: B&#10;&#10;2. Next question?&#10;A. ...">${esc(quizToText(l.questions))}</textarea>
+      <p class="muted" style="margin-top:6px;font-size:.9rem">Leave a blank line between questions. Each question has options A, B, C, D and one line like "Answer: B".</p>
+      <label for="lPass">Pass mark (%)</label><input id="lPass" type="number" min="1" max="100" value="${esc(l.passMark || 80)}">
+    </div>
+
+    <label for="lBody">Lesson text or notes (optional)</label><textarea id="lBody" rows="6">${esc(l.body || '')}</textarea>
+    <label for="lOrder">Order inside the module</label><input id="lOrder" type="number" value="${esc(l.order || 1)}">
+    <label class="chk"><input id="lPrev" type="checkbox" ${l.preview ? 'checked' : ''}> Free preview (anyone can open it)</label>
+    <label class="chk"><input id="lPub" type="checkbox" ${l.published ? 'checked' : ''}> Published</label>
+    <p class="muted" id="upText" style="margin-top:10px"></p>
+    <div class="row"><button class="btn" type="button" id="saveL">${editingLesson ? 'Save changes' : 'Add lesson'}</button>${editingLesson ? '<button class="btn line" type="button" id="cancelL">Cancel</button>' : ''}</div>
+  </div>`;
+  const sync = () => {
+    const t = $('lType').value;
+    $('moduleBox').classList.toggle('hide', t !== 'module');
+    $('fileBox').classList.toggle('hide', !(t === 'file' || t === 'pdf'));
+    $('urlBox').classList.toggle('hide', !(t === 'video' || t === 'link' || t === 'module'));
+    $('quizBox').classList.toggle('hide', !(t === 'quiz' || t === 'module'));
+    $('lUrlLabel').textContent = t === 'module' ? 'Video link (optional, YouTube or Google Drive)' : 'Link (for video or handout)';
+    $('lQuizLabel').textContent = t === 'module' ? 'Module quiz (optional, aim for 10 questions)' : 'Quiz questions (aim for 10)';
+    $('lFile').accept = t === 'pdf' ? '.pdf' : '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp3';
+    $('lFileLabel').textContent = t === 'pdf' ? 'Upload the PDF handout (students read it on the page and cannot download it, up to 15 MB)' : 'Upload a file students can download, such as a PPTX (up to 15 MB)';
+  };
+  $('lType').onchange = sync; sync();
+  $('lessonsBox').querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editingLesson = b.dataset.e; renderLessons(); window.scrollTo({ top: $('lessonsBox').offsetTop, behavior: 'smooth' }); });
+  $('lessonsBox').querySelectorAll('[data-d]').forEach(b => b.onclick = () => deleteLesson(b.dataset.d));
+  $('saveL').onclick = saveLesson;
+  if (editingLesson) $('cancelL').onclick = () => { editingLesson = null; renderLessons(); };
+}
+
+/* ---------- File uploads (stored in Firestore in small pieces) ---------- */
+async function uploadFile(cid, f, onp) {
+  const fid = 'f-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const buf = new Uint8Array(await f.arrayBuffer());
+  const n = Math.max(1, Math.ceil(buf.length / CHUNK));
+  const fref = db.collection('catalog').doc(cid).collection('files').doc(fid);
+  try {
+    await fref.set({ name: f.name, size: f.size, type: f.type || 'application/octet-stream', chunks: n, preview: false });
+    for (let i = 0; i < n; i++) {
+      await fref.collection('chunks').doc(String(i)).set({ data: firebase.firestore.Blob.fromUint8Array(buf.slice(i * CHUNK, (i + 1) * CHUNK)) });
+      onp(Math.round(100 * (i + 1) / n));
+    }
+  } catch (e) { try { await deleteFile(cid, fid); } catch (x) {} throw e; }
+  return { fileId: fid, fileName: f.name, fileSize: f.size, fileType: f.type || '' };
+}
+async function deleteFile(cid, fid) {
+  const fref = db.collection('catalog').doc(cid).collection('files').doc(fid);
+  const cs = await fref.collection('chunks').get();
+  const b = db.batch(); cs.forEach(d => b.delete(d.ref)); b.delete(fref); await b.commit();
+}
+
+const SLOTS = {
+  s: { id: 'fileId', name: 'fileName', size: 'fileSize', type: 'fileType', input: 'lFile' },
+  p: { id: 'pdfId', name: 'pdfName', size: 'pdfSize', type: 'pdfType', input: 'lMPdf' },
+  d: { id: 'dlId', name: 'dlName', size: 'dlSize', type: 'dlType', input: 'lMDl' },
+};
+async function saveLesson() {
+  const title = $('lTitle').value.trim(), type = $('lType').value, url = $('lUrl').value.trim();
+  if (!title) return flash('Enter a lesson title.');
+  const hasUrl = type === 'video' || type === 'link' || type === 'module';
+  if (hasUrl && url && !safeUrl(url)) return flash('The link must start with http:// or https://');
+  const mod = Math.max(1, Number($('lModule').value) || 1);
+  const quizText = $('lQuiz').value.trim();
+  let questions = null, passMark = 80;
+  if (type === 'quiz' || (type === 'module' && quizText)) {
+    try { questions = parseQuiz($('lQuiz').value); } catch (e) { return flash(e.message); }
+    passMark = Math.min(100, Math.max(1, Number($('lPass').value) || 80));
+  }
+  const old = lessonList.find(x => x.id === editingLesson) || {};
+  const active = type === 'module' ? ['p', 'd'] : (type === 'file' || type === 'pdf' ? ['s'] : []);
+  const picked = {};
+  for (const a of active) {
+    const f = $(SLOTS[a].input).files[0];
+    if (f) {
+      if ((a === 'p' || type === 'pdf') && !/\.pdf$/i.test(f.name)) return flash('The PDF handout must be a PDF file.');
+      if (f.size > MAX_BYTES) return flash('That file is ' + fmtSize(f.size) + '. The limit is 15 MB. For videos, upload to YouTube and paste the link instead.');
+      picked[a] = f;
+    }
+  }
+  if (active.includes('s') && !picked.s && !old.fileId) return flash('Choose a file to upload.');
+  if (type === 'module' && !picked.p && !picked.d && !old.pdfId && !old.dlId && !old.fileId && !questions && !$('lBody').value.trim() && !url) return flash('Add at least a handout, a download, a quiz, a video, or some text.');
+
+  const id = editingLesson || ('l-' + Date.now().toString(36));
+  const btn = $('saveL'); btn.disabled = true;
+  const newlyUploaded = []; // so we can clean up if the final save fails
+  try {
+    const info = {}, toDelete = [];
+    let adopted = null;
+    const isPdfName = n => /\.pdf$/i.test(n || '');
+    for (const a of ['p', 'd', 's']) {
+      const k = SLOTS[a];
+      if (!active.includes(a)) { if (old[k.id] && old[k.id] !== adopted) toDelete.push(old[k.id]); continue; }
+      if (picked[a]) {
+        const r = await uploadFile(cur, picked[a], pr => { $('upText').textContent = 'Uploading... ' + pr + '%'; });
+        newlyUploaded.push(r.fileId);
+        info[k.id] = r.fileId; info[k.name] = r.fileName; info[k.size] = r.fileSize; info[k.type] = r.fileType;
+        if (old[k.id]) toDelete.push(old[k.id]);
+      } else if (old[k.id]) {
+        info[k.id] = old[k.id]; info[k.name] = old[k.name]; info[k.size] = old[k.size]; info[k.type] = old[k.type] || '';
+      } else if (type === 'module' && old.fileId && !adopted && ((a === 'p' && isPdfName(old.fileName)) || (a === 'd' && !isPdfName(old.fileName)))) {
+        // move the file from an older single-file lesson into this module page
+        adopted = old.fileId;
+        info[k.id] = old.fileId; info[k.name] = old.fileName; info[k.size] = old.fileSize; info[k.type] = old.fileType || '';
+      }
+    }
+    const preview = $('lPrev').checked;
+    await db.collection('catalog').doc(cur).collection('lessons').doc(id).set({
+      title, type, url: hasUrl ? url : '', body: $('lBody').value, order: Number($('lOrder').value) || 1,
+      module: mod, preview, published: $('lPub').checked, ...(questions ? { questions, passMark } : {}), ...info
+    });
+    for (const fid of [info.fileId, info.pdfId, info.dlId].filter(Boolean)) await db.collection('catalog').doc(cur).collection('files').doc(fid).update({ preview });
+    for (const fid of toDelete) { try { await deleteFile(cur, fid); } catch (e) {} }
+    await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson saved.', true);
+  } catch (e) {
+    // remove files uploaded in this attempt so they are not orphaned
+    for (const fid of newlyUploaded) { try { await deleteFile(cur, fid); } catch (x) {} }
+    fail('Could not save the lesson.', e); btn.disabled = false;
+  }
+}
+async function deleteLesson(id) {
+  if (!confirm('Delete this lesson?')) return;
+  try {
+    const l = lessonList.find(x => x.id === id) || {};
+    for (const fid of [l.fileId, l.pdfId, l.dlId].filter(Boolean)) await deleteFile(cur, fid);
+    await db.collection('catalog').doc(cur).collection('lessons').doc(id).delete();
+    await rebuildOutline(cur); editingLesson = null; await loadLessons(); flash('Lesson deleted.', true);
+  } catch (e) { fail('Could not delete the lesson.', e); }
+}
+async function rebuildOutline(cid) {
+  const ref = db.collection('catalog').doc(cid);
+  const s = await ref.collection('lessons').get();
+  const outline = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(l => l.published).sort(byModule)
+    .map(l => ({ id: l.id, title: l.title, type: l.type, preview: !!l.preview, module: l.module || 1, ...(l.type === 'quiz' || (l.questions || []).length ? { passMark: l.passMark || 80 } : {}), ...((l.type === 'module' && (l.questions || []).length) ? { hasQuiz: true } : {}) }));
+  await ref.set({ outline }, { merge: true });
+}
+async function addSample() {
+  const id = 'canva-module-1', ref = db.collection('catalog').doc(id);
+  try {
+    await ref.set({ title: 'Module 1: Getting Started with Canva', level: 'Basic', summary: 'Learn the Canva dashboard, how to use templates, and how to save and export your designs.', price: '₱99', order: 1, published: false }, { merge: true });
+    const items = [['Intro to the Canva dashboard', true], ['How to use templates', false], ['Saving and exporting designs', false]];
+    for (let i = 0; i < items.length; i++) await ref.collection('lessons').doc('l-' + (i + 1)).set({ title: items[i][0], type: 'text', url: '', body: 'Write your lesson here.', order: i + 1, preview: items[i][1], published: true });
+    await rebuildOutline(id); await loadCourses(); await selectCourse(id);
+    flash('Sample course added as a draft. Edit the lessons, then tick Published.', true);
+  } catch (e) { fail('Could not add the sample course. Check your Firestore rules.', e); }
+}
+
+/* ---------- Students ---------- */
+const NOT_PAID = 'Not yet paid. No access to learning.';
+let studentFilter = 'all';
+const hasAccess = st => (st.courses || []).length > 0;
+
+async function loadStudents() {
+  try {
+    const s = await db.collection('users').get();
+    students = s.docs.map(d => ({ uid: d.id, ...d.data() }));
+    if (!courses.length) await loadCourses();
+  } catch (e) { fail('Could not load students. Check your Firestore rules.', e); return; }
+  drawStudents();
+}
+
+function drawStudents() {
+  const q = $('search').value.trim().toLowerCase();
+  const open = students.filter(hasAccess).length, locked = students.length - open;
+  $('sfilters').innerHTML = [['all', 'All (' + students.length + ')'], ['open', 'Access unlocked (' + open + ')'], ['locked', 'Not paid (' + locked + ')']]
+    .map(([k, t]) => `<button type="button" class="${studentFilter === k ? 'on' : ''}" data-f="${k}">${t}</button>`).join('');
+  $('sfilters').querySelectorAll('button').forEach(b => b.onclick = () => { studentFilter = b.dataset.f; drawStudents(); });
+
+  const list = students.filter(s =>
+    (!q || (s.fullName || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q)) &&
+    (studentFilter === 'all' || (studentFilter === 'open' ? hasAccess(s) : !hasAccess(s))));
+
+  $('slist').innerHTML = list.map(s => {
+    const ok = hasAccess(s);
+    return `<div class="student" data-u="${esc(s.uid)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><strong>${esc(s.fullName || 'No name yet')}</strong> <span class="muted">${esc(s.email || s.uid)}</span></div>
+        <span class="tag ${ok ? 'ok' : ''}" style="${ok ? '' : 'background:#ffe3ea;color:#8a1236'}">${ok ? 'Access unlocked' : 'No access (not paid)'}</span>
+      </div>
+      <label>Courses unlocked</label>
+      <div class="checks">${courses.map(c => `<label class="chk" style="margin:0"><input type="checkbox" value="${esc(c.id)}" ${(s.courses || []).includes(c.id) ? 'checked' : ''}> ${esc(c.title || c.id)}</label>`).join('') || '<span class="muted">Create a course first.</span>'}</div>
+      <label>Payment terms (the student sees this)</label>
+      <input class="pay" value="${esc(s.payment || '')}" placeholder="Per module: ₱99 (Paid)">
+      <div class="row"><button class="btn sm" type="button" data-act="save">Save student</button><button class="btn sm line" type="button" data-act="lock">Lock access (not paid)</button></div>
+    </div>`;
+  }).join('') || '<p class="muted">No students found here. Students appear after they open their profile once.</p>';
+
+  $('slist').querySelectorAll('.student').forEach(card => {
+    const uid = card.dataset.u, st = students.find(x => x.uid === uid), who = st.fullName || st.email || 'student';
+    const finish = async (data, msg) => {
+      try { await db.collection('users').doc(uid).update(data); flash(msg, true); await loadStudents(); }
+      catch (e) { fail('Could not save ' + who + '.', e); }
+    };
+    card.querySelector('[data-act=save]').onclick = () => {
+      const ids = Array.from(card.querySelectorAll('input[type=checkbox]:checked')).map(i => i.value);
+      // keep older course entries that are not in the catalog
+      const old = (st.courses || []).filter(c => !courses.some(k => k.id === c));
+      const all = [...ids, ...old];
+      let pay = card.querySelector('.pay').value.trim();
+      if (!all.length && (!pay || pay === 'No payment recorded yet')) pay = NOT_PAID;
+      finish({ courses: all, payment: pay || 'No payment recorded yet' },
+        'Saved ' + who + ': ' + (all.length ? all.length + ' course(s) unlocked.' : 'no access (not paid).'));
+    };
+    card.querySelector('[data-act=lock]').onclick = () => {
+      if (!confirm('Lock all courses for ' + who + '? They will not be able to open any lessons.')) return;
+      finish({ courses: [], payment: NOT_PAID }, 'Locked ' + who + ': no access to learning.');
+    };
+  });
+}
+</script>
+</body>
+</html>
