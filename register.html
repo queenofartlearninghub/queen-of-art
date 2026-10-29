@@ -18,7 +18,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:v
 label{display:block;font-weight:700;font-size:.92rem;margin:14px 0 5px}
 input{width:100%;padding:12px 14px;border:2px solid #d7cdef;border-radius:12px;font:inherit}
 input:focus{outline:none;border-color:var(--violet)}
-.go{margin-top:22px;width:100%;padding:14px;border:0;border-radius:999px;background:var(--gold);color:var(--dark);font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+.go{margin-top:22px;width:100%;padding:14px;border:0;border-radius:999px;background:var(--gold);color:var(--dark);font:inherit;font-weight:700;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
 .go:disabled{opacity:.6;cursor:wait}
 .msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:.93rem;display:none}
 .msg.err{display:block;background:#ffe3ea;color:#8a1236}
@@ -41,7 +41,7 @@ input:focus{outline:none;border-color:var(--violet)}
       <button role="tab" id="tabLog" aria-selected="true">Log in</button>
     </div>
 
-    <!-- STUDENT Registration — Visible for Students Only ✅ -->
+    <!-- STUDENT Registration -->
     <form id="regForm" novalidate class="hide">
       <label for="rName">Full name</label>
       <input id="rName" autocomplete="name" required>
@@ -54,7 +54,7 @@ input:focus{outline:none;border-color:var(--violet)}
       <button class="go" type="submit">Create Student Account</button>
     </form>
 
-    <!-- Login — For Everyone ✅ -->
+    <!-- Login -->
     <form id="logForm" novalidate>
       <label for="lEmail">Email</label>
       <input id="lEmail" type="email" autocomplete="email" required>
@@ -65,11 +65,11 @@ input:focus{outline:none;border-color:var(--violet)}
     </form>
   </div>
 
-  <!-- Signed-in view -->
+  <!-- Signed-in view — HIDDEN NOW, REDIRECTS INSTEAD ✅ -->
   <div id="inside" class="hide">
     <h2 id="hello" style="font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px"></h2>
     <p id="roleNote" style="margin-bottom:16px"></p>
-    <a class="go" href="index.html" id="gotoLink" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to homepage</a>
+    <a class="go" id="gotoLink" style="margin-bottom:12px">Go to Dashboard</a>
     <button class="go" id="logout" type="button">Log out</button>
   </div>
 
@@ -83,7 +83,7 @@ input:focus{outline:none;border-color:var(--violet)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  <script>
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
   authDomain: "queen-of-art.firebaseapp.com",
@@ -102,8 +102,13 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
-// ✅ Admin email — NO registration on this page, only login ✅
-const ADMIN_EMAIL = "almirabagro12@gmail.com";
+// ✅ ADMIN EMAILS LIST
+const ADMIN_EMAILS = [
+  "almirabagro12@gmail.com",
+  "mira.graphicsfreelancer@gmail.com"
+];
+const isAdminEmail = (email) => ADMIN_EMAILS.some(admin => admin.toLowerCase() === email.toLowerCase());
+
 const urlParams = new URLSearchParams(window.location.search);
 const role = urlParams.get('role') || 'student';
 
@@ -126,16 +131,15 @@ function show(tab){
   clear();
 }
 
-// ✅ Setup based on role
 window.addEventListener('DOMContentLoaded', () => {
   if (role === 'admin') {
     $('pageSub').textContent = 'Admin — Sign In Only';
-    $('tabsRow').classList.add('hide'); // ❌ No tabs — login only ✅
+    $('tabsRow').classList.add('hide');
     $('regForm').classList.add('hide');
     $('logForm').classList.remove('hide');
   } else {
     $('pageSub').textContent = 'Student — Register or Sign In';
-    $('tabsRow').classList.remove('hide'); // ✅ Students see Register + Login
+    $('tabsRow').classList.remove('hide');
     show('log');
   }
 });
@@ -143,7 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
 $('tabReg').onclick = () => show('reg');
 $('tabLog').onclick = () => show('log');
 
-// ✅ STUDENT Registration — WORKS for everyone EXCEPT Admin
 $('regForm').onsubmit = async e => {
   e.preventDefault(); clear();
   
@@ -151,9 +154,8 @@ $('regForm').onsubmit = async e => {
   const email = $('rEmail').value.trim().toLowerCase();
   const p1 = $('rPass').value, p2 = $('rPass2').value;
 
-  // Admin cannot register here — account created in Firebase Console ✅
-  if (email === ADMIN_EMAIL) {
-    return msg('Admin account is created separately — please use Log In.');
+  if (isAdminEmail(email)) {
+    return msg('This is an Admin account — please use Log In.');
   }
   
   if (!name) return msg('Enter your full name.');
@@ -166,10 +168,8 @@ $('regForm').onsubmit = async e => {
     await cred.user.updateProfile({ displayName: name });
     await cred.user.sendEmailVerification();
     
-    // Firestore doc — email as ID ✅
     const userRef = db.collection("users").doc(email);
     const existing = await userRef.get();
-    
     if (!existing.exists) {
       await userRef.set({
         fullName: name,
@@ -187,7 +187,6 @@ $('regForm').onsubmit = async e => {
   btn.disabled = false;
 };
 
-// ✅ Login — ALL users go through here
 $('logForm').onsubmit = async e => {
   e.preventDefault(); clear();
   const btn = e.submitter; btn.disabled = true;
@@ -207,7 +206,6 @@ $('forgot').onclick = async () => {
   } catch (err) { msg(friendly(err)); }
 };
 
-// ✅ Logout
 $('logout').onclick = async () => {
   try {
     await auth.signOut();
@@ -217,28 +215,21 @@ $('logout').onclick = async () => {
   }
 };
 
-// ✅ After login — CHECK ADMIN STATUS ✅
-auth.onAuthStateChanged(async u => {
-  $('auth').classList.toggle('hide', !!u);
-  $('inside').classList.toggle('hide', !u);
-  
-  if (u) {
-    const isAdmin = u.email.toLowerCase() === ADMIN_EMAIL;
-    const displayName = u.displayName || u.email.split('@')[0];
-    
-    $('hello').textContent = 'Welcome, ' + displayName;
-    
-    if (isAdmin) {
-      $('roleNote').textContent = '✅ You are logged in as ADMIN';
-      $('roleNote').style.color = 'green';
-      $('gotoLink').textContent = 'Go to Admin Dashboard';
-      $('gotoLink').href = 'admin.html'; // your admin page
-    } else {
-      $('roleNote').textContent = '❌ You are not admin — Student access only';
-      $('roleNote').style.color = 'red';
-      $('gotoLink').textContent = 'Go to Courses';
-      $('gotoLink').href = 'index.html';
-    }
+// ✅ INSTANT REDIRECT — NO INTERMEDIATE PAGE ✅
+auth.onAuthStateChanged(u => {
+  if (!u) {
+    $('auth').classList.remove('hide');
+    $('inside').classList.add('hide');
+    return;
+  }
+
+  // User IS logged in — redirect immediately
+  if (isAdminEmail(u.email.toLowerCase())) {
+    // Admin → admin page
+    window.location.href = "admin.html";
+  } else {
+    // NOT admin → directly to courses section ✅
+    window.location.href = "index.html#courses";
   }
 });
 </script>
