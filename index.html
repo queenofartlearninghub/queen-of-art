@@ -3,538 +3,50 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Queen of Art | Online Graphic Design & Canva Courses</title>
-<meta name="description" content="Master graphic design and Canva with Queen of Art's online courses.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --violet:#3B1C78; --violet-dark:#24104D; --lilac:#EEE6FF; --marigold:#FFC93C;
-  --rose:#FF5C8A; --ink:#1E1433; --white:#fff;
-  --head:'Bricolage Grotesque','Trebuchet MS',sans-serif;
-  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
-}
+:root{--violet:#3B1C78;--dark:#24104D;--lilac:#EEE6FF;--gold:#FFC93C;--rose:#FF5C8A;--ink:#1E1433}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:var(--body);color:var(--ink);background:var(--white);line-height:1.6;font-size:17px}
-img{max-width:100%}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
-.wrap{max-width:1100px;margin:0 auto;padding:0 22px}
-h1,h2,h3{font-family:var(--head);line-height:1.1;letter-spacing:-.02em}
-h2{font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:12px}
-section{padding:80px 0}
-.lead{max-width:62ch;margin-bottom:36px;font-size:1.05rem}
-.btn{display:inline-block;padding:13px 26px;border-radius:999px;background:var(--marigold);color:var(--violet-dark);font-weight:700;text-decoration:none;border:2px solid var(--marigold);transition:transform .15s}
-.btn:hover{transform:translateY(-2px)}
-.btn.ghost{background:transparent;color:inherit;border-color:currentColor}
-
-/* header */
-header{background:var(--violet-dark);color:var(--white);position:sticky;top:0;z-index:10}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 22px;max-width:1100px;margin:0 auto;flex-wrap:wrap}
-.logo{font-family:var(--head);font-weight:800;font-size:1.3rem;text-decoration:none}
-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
-nav a{text-decoration:none;font-weight:500;font-size:.95rem}
-nav a:hover{color:var(--marigold)}
-
-/* hero */
-.hero{background:var(--violet);color:var(--white);padding:90px 0 100px;overflow:hidden}
-.hero .wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
-.hero h1{font-size:clamp(2.6rem,7vw,4.8rem);font-weight:800;margin-bottom:20px}
-.hero p{max-width:50ch;margin-bottom:28px;color:#E5DAFF}
-.hero .btns{display:flex;gap:14px;flex-wrap:wrap}
-.swatches{position:relative;height:340px}
-.sw{position:absolute;border-radius:28px;display:flex;align-items:flex-end;padding:16px;font-family:var(--head);font-weight:800;font-size:1.1rem;color:var(--ink);box-shadow:0 18px 40px rgba(0,0,0,.28)}
-.sw.a{width:200px;height:240px;background:var(--marigold);left:6%;top:10px;transform:rotate(-8deg)}
-.sw.b{width:190px;height:230px;background:var(--rose);left:34%;top:60px;transform:rotate(5deg)}
-.sw.c{width:180px;height:210px;background:var(--lilac);left:58%;top:0;transform:rotate(12deg)}
-
-/* modules */
-.modules{background:var(--lilac)}
-.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
-.mod{background:var(--white);border-radius:22px;padding:26px;display:flex;flex-direction:column;border-top:8px solid var(--violet)}
-.mod:nth-child(2){border-color:var(--rose)}
-.mod:nth-child(3){border-color:var(--marigold)}
-.mod:nth-child(4){border-color:var(--ink)}
-.mod .m{font-weight:700;font-size:.9rem;color:#6a5a8c;margin-bottom:6px}
-.mod h3{font-size:1.4rem;margin-bottom:12px}
-.mod ul{padding-left:18px;margin-bottom:20px;flex:1}
-.mod li{margin-bottom:6px}
-.mod a{font-weight:700;color:var(--violet)}
-
-/* why */
-.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
-.why div{border-left:6px solid var(--rose);padding-left:16px}
-.why h3{font-size:1.2rem;margin-bottom:4px}
-
-/* pricing */
-.pricing{background:var(--violet-dark);color:var(--white)}
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
-.plan{background:var(--white);color:var(--ink);border-radius:24px;padding:30px;display:flex;flex-direction:column}
-.plan.best{background:var(--marigold)}
-.plan h3{font-size:1.4rem}
-.price{font-family:var(--head);font-size:2.8rem;font-weight:800;margin:8px 0 2px}
-.price small{font-size:1rem;font-weight:500;font-family:var(--body)}
-.plan ul{list-style:none;margin:18px 0;flex:1}
-.plan li{padding:6px 0 6px 26px;position:relative}
-.plan li::before{content:"\2713";position:absolute;left:0;font-weight:700;color:var(--violet)}
-.plan .for{font-size:.93rem;margin-bottom:18px}
-.plan .btn{text-align:center;background:var(--violet);border-color:var(--violet);color:var(--white)}
-.plan.best .btn{background:var(--violet-dark);border-color:var(--violet-dark)}
-
-/* mentors */
-.mentors-section {padding:60px 20px;max-width:1200px;margin:0 auto}
-.mentors-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px;margin-top:40px}
-.mentor-card {text-align:center;padding:30px 20px;border-radius:16px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.06);transition:transform .3s ease}
-.mentor-card:hover {transform:translateY(-5px)}
-.mentor-avatar {width:120px;height:120px;border-radius:50%;object-fit:cover;margin-bottom:20px;border:3px solid #f0f0f0}
-.mentor-name {font-size:1.25rem;font-weight:700;margin:0 0 6px;color:#1a1a2e}
-.mentor-position {font-size:.95rem;color:#666;margin-bottom:15px}
-.mentor-bio {font-size:.9rem;line-height:1.6;color:#444;margin-bottom:20px}
-.hire-btn {font-family:var(--body);padding:13px 100px;border-radius:999px;background:var(--violet);font-weight:700;color:#fff;border:2px solid var(--violet);cursor:pointer;transition:background .3s ease}
-.hire-btn:hover {background:var(--violet-dark);border-color:var(--violet-dark)}
-
-/* Modal */
-.modal-overlay {position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
-.modal-content {background:#fff;border-radius:16px;max-width:550px;width:100%;padding:30px;position:relative;max-height:90vh;overflow-y:auto}
-.modal-close {position:absolute;top:15px;right:20px;font-size:1.5rem;cursor:pointer;color:#888}
-.modal-close:hover {color:#111}
-.modal-avatar {width:100px;height:100px;border-radius:50%;object-fit:cover;margin-bottom:15px}
-.modal-title {margin:0 0 5px;font-size:1.4rem;color:#1a1a2e}
-.modal-subtitle {color:#555;margin-bottom:20px}
-.modal-section {margin-bottom:16px}
-.modal-label {font-weight:600;color:#333;display:block;margin-bottom:4px}
-.modal-value {color:#555;line-height:1.5}
-.resume-link {color:var(--violet);font-weight:700;text-decoration:none}
-.resume-link:hover {text-decoration:underline}
-
-/* tools + contact + footer */
-.tools{background:var(--lilac)}
-.chips{display:flex;flex-wrap:wrap;gap:12px}
-.chips span{background:#fff;padding:10px 20px;border-radius:999px;font-weight:700}
-.contact{text-align:center}
-.contact p{margin:0 auto 26px}
-footer{background:var(--ink);color:#cfc6e6;padding:40px 0;font-size:.93rem}
-footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
-footer a{text-decoration:none;margin-right:16px}
-footer a:hover{color:var(--marigold)}
-
-/* account menu */
-.hide{display:none!important}
-.acct{position:relative}
-.acct>button{display:flex;align-items:center;gap:8px;background:transparent;border:2px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:4px 14px 4px 4px;font:inherit;font-weight:500;font-size:.95rem;cursor:pointer}
-.acct>button:hover{border-color:var(--marigold)}
-.av{width:30px;height:30px;border-radius:50%;background:var(--marigold);color:var(--violet-dark);display:grid;place-items:center;font-weight:700}
-.menu{position:absolute;right:0;top:calc(100% + 10px);background:#fff;color:var(--ink);border-radius:16px;min-width:230px;padding:8px;box-shadow:0 18px 40px rgba(0,0,0,.3)}
-.menu .who{padding:10px 12px;border-bottom:1px solid #e6dcfa;margin-bottom:6px;display:flex;flex-direction:column;word-break:break-all}
-.menu .who span{font-size:.85rem;color:#6a5a8c}
-.menu a,.menu button{display:block;width:100%;text-align:left;padding:10px 12px;border:0;background:transparent;border-radius:10px;font:inherit;font-weight:500;color:var(--ink);cursor:pointer;text-decoration:none}
-.menu a:hover,.menu button:hover{background:var(--lilac);color:var(--ink)}
-
-@media(max-width:800px){
-  .hero .wrap{grid-template-columns:1fr}
-  .swatches{height:280px}
-  section{padding:60px 0}
-  nav{gap:12px}
-}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:var(--ink);min-height:100vh}
+/* Add your existing styles here — keep whatever you already have */
+.avatar-letter{background:var(--gold);color:var(--dark);border-radius:50%;width:36px;height:36px;display:grid;place-items:center;font-weight:700}
+.user-name{font-weight:700}
+.user-email{font-size:.85rem;color:#666}
+.hide{display:none}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="bar">
-    <a class="logo" href="#top">Queen of Art</a>
-    <nav aria-label="Main">
-      <a href="#courses">Courses</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#mentors">Mentors</a>
-      <a href="#tools">Tools</a>
-      <a href="#contact">Contact</a>
-      <a href="courses.html">Learning hub</a>
-      <a href="register.html" id="loginLink">Student login</a>
-      <div class="acct hide" id="acct">
-        <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
-          <span class="av" id="avatar">S</span><span id="acctName">Account</span>
-        </button>
-        <div class="menu hide" id="acctMenu">
-          <div class="who"><strong id="menuName"></strong><span id="menuEmail"></span></div>
-          <a href="profile.html">My Profile</a>
-          <a href="payment.html">Payment Terms</a>
-          <a href="privacy.html">Privacy Policy</a>
-          <button type="button" id="navLogout">Log out</button>
-        </div>
-      </div>
-    </nav>
-  </div>
-</header>
-
-<main id="top">
-<div class="hero">
-  <div class="wrap">
+<!-- YOUR NAVIGATION / PAGE CONTENT STARTS HERE — keep your existing HTML -->
+<!-- Example navigation structure: -->
+<nav style="background:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
+  <div class="brand" style="font-family:'Bricolage Grotesque';font-weight:800;font-size:1.4rem;color:var(--violet)">Queen of Art</div>
+  
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="avatar-letter">A</div>
     <div>
-      <h1>Learn design. Earn from it.</h1>
-      <p>Queen of Art is an online learning hub for creatives who want to turn their skills into income.</p>
-      <div class="btns">
-        <a class="btn" href="#courses">See the courses</a>
-        <a class="btn ghost" href="#pricing">View pricing</a>
+      <div class="user-name">Loading…</div>
+      <div class="user-email"></div>
+    </div>
+    <div style="position:relative">
+      <button id="userMenuToggle" style="background:none;border:none;cursor:pointer">▼</button>
+      <div id="userDropdown" style="display:none;position:absolute;right:0;top:100%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);border-radius:8px;min-width:160px;z-index:99">
+        <a href="profile.html" style="display:block;padding:10px 14px;text-decoration:none;color:inherit">My Profile</a>
+        <a href="#" data-action="logout" style="display:block;padding:10px 14px;text-decoration:none;color:inherit">Log out</a>
       </div>
     </div>
-    <div class="swatches" aria-hidden="true">
-      <div class="sw a">Color</div>
-      <div class="sw b">Type</div>
-      <div class="sw c">Layout</div>
-    </div>
   </div>
-</div>
+</nav>
 
-<section class="modules" id="courses">
-  <div class="wrap">
-    <h2>Canva Design Basics: weekly learning plan</h2>
-    <p class="lead">A step-by-step path for beginners. No expensive software needed.</p>
-    <div class="grid4">
-      <article class="mod">
-        <div class="m">Module 01</div>
-        <h3>Getting started</h3>
-        <ul><li>Canva dashboard</li><li>Using templates</li><li>Saving designs</li></ul>
-        <a href="#contact">Enroll now</a>
-      </article>
-      <article class="mod">
-        <div class="m">Module 02</div>
-        <h3>Design fundamentals</h3>
-        <ul><li>Color theory</li><li>Typography</li><li>Layout basics</li></ul>
-        <a href="#contact">Enroll now</a>
-      </article>
-      <article class="mod">
-        <div class="m">Module 03</div>
-        <h3>Branding &amp; templates</h3>
-        <ul><li>Brand kit setup</li><li>Custom templates</li><li>Consistency</li></ul>
-        <a href="#contact">Enroll now</a>
-      </article>
-      <article class="mod">
-        <div class="m">Module 04</div>
-        <h3>Real-world projects</h3>
-        <ul><li>Social media posts</li><li>Multi-platform sizing</li><li>Portfolio piece</li></ul>
-        <a href="#contact">Enroll now</a>
-      </article>
-    </div>
-  </div>
-</section>
+<!-- Your page main content here — keep everything you already have -->
 
-<section>
-  <div class="wrap">
-    <h2>Why learn with Queen of Art</h2>
-    <p class="lead">Every course comes with a free certificate.</p>
-    <div class="why">
-      <div><h3>Learn anywhere</h3><p>100% online & self-paced.</p></div>
-      <div><h3>Free certificate</h3><p>Earn one for every course.</p></div>
-      <div><h3>Beginner-friendly</h3><p>No experience needed.</p></div>
-      <div><h3>Practical skills</h3><p>Real projects, real results.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="pricing" id="pricing">
-  <div class="wrap">
-    <h2>Learning & Resource Pricing</h2>
-    <p class="lead">Choose the resource or certification track that matches your goals. All materials are downloadable, editable, and yours to keep.</p>
-
-    <div class="plans">
-
-      <div class="plan">
-        <h3>Career Starter Templates</h3>
-        <div class="price">₱99 <small>/ template</small></div>
-        <ul>
-          <li>Editable Canva Resume Templates</li>
-          <li>Professional Cover Letter Templates</li>
-          <li>Portfolio Templates</li>
-          <li>Business Proposal Templates</li>
-          <li>Client Presentation Decks</li>
-          <li>Social Media Portfolio Kits</li>
-        </ul>
-        <p class="for">Perfect for students, freelancers, and job seekers.</p>
-        <a class="btn" href="payment.html">Get Access</a>
-      </div>
-
-      <div class="plan best">
-        <h3>Skill-Based Learning Modules</h3>
-        <div class="price">₱99 - ₱299 <small>/ module</small></div>
-        <ul>
-          <li>Canva Design Fundamentals</li>
-          <li>Graphic Design Basics</li>
-          <li>Branding & Visual Identity</li>
-          <li>Social Media Design</li>
-          <li>Portfolio Building</li>
-          <li>Freelancing & Client Acquisition</li>
-        </ul>
-        <p class="for">Learn practical, income-generating creative skills.</p>
-        <a class="btn" href="payment.html">Start Learning</a>
-      </div>
-
-      <div class="plan">
-        <h3>Certification Prep Tracks</h3>
-        <div class="price">₱299 - ₱999 <small>/ track</small></div>
-        <ul>
-          <li>Adobe Certified Professional (Photoshop)</li>
-          <li>Adobe Certified Professional (Illustrator)</li>
-          <li>HubSpot Inbound Marketing Certification</li>
-          <li>HubSpot Social Media Certification</li>
-          <li>Google Workspace Professional Certification</li>
-          <li>Trello Professional Certification</li>
-          <li>Asana Project Management Badge</li>
-          <li>ClickUp Productivity Badge</li>
-        </ul>
-        <p class="for">Prepare for in-demand certifications recognized by employers and clients.</p>
-        <a class="btn" href="payment.html">Enroll Now</a>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-
-
-<section class="mentors-section" id="mentors">
-  <h2>Meet our mentors</h2>
-  <p>Dedicated mentors nurturing every artist.</p>
-  <div class="mentors-grid">
-    <div class="mentor-card">
-      <img src="mira.jpg" alt="Coach Mira" class="mentor-avatar">
-      <h3 class="mentor-name">Coach Mira</h3>
-      <p class="mentor-position">Founder & Creative Director</p>
-      <p class="mentor-bio">Hands-on design & freelance strategies.</p>
-      <button class="hire-btn" data-mentor="mira">Hire Me</button>
-    </div>
-    <div class="mentor-card">
-      <img src="sarah.jpg" alt="Coach Sarah" class="mentor-avatar">
-      <h3 class="mentor-name">Coach Sarah</h3>
-      <p class="mentor-position">Co-Founder, SEO & Lead Design</p>
-      <p class="mentor-bio">SEO + design = growth.</p>
-      <button class="hire-btn" data-mentor="sarah">Hire Me</button>
-    </div>
-    <div class="mentor-card">
-      <img src="zen.jpg" alt="Consultant Zen" class="mentor-avatar">
-      <h3 class="mentor-name">Consultant Zen</h3>
-      <p class="mentor-position">Legal Consultant</p>
-      <p class="mentor-bio">Copyright, contracts & business law.</p>
-      <button class="hire-btn" data-mentor="zen">Hire Me</button>
-    </div>
-  </div>
-</section>
-
-<!-- ✅ MODAL — Resume link IN the HTML, not JS -->
-<div class="modal-overlay" id="hireModal">
-  <div class="modal-content">
-    <span class="modal-close">&times;</span>
-    <img id="modalAvatar" src="" alt="" class="modal-avatar">
-    <h3 class="modal-title" id="modalName"></h3>
-    <p class="modal-subtitle" id="modalPosition"></p>
-
-    <div class="modal-section">
-      <span class="modal-label">Summary</span>
-      <p class="modal-value" id="modalSummary"></p>
-    </div>
-    <div class="modal-section">
-      <
-              <span class="modal-label">Core Competences</span>
-      <p class="modal-value" id="modalSkills"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Education</span>
-      <p class="modal-value" id="modalEducation"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Email</span>
-      <p class="modal-value" id="modalEmail"></p>
-    </div>
-    <div class="modal-section">
-      <span class="modal-label">Contact Details</span>
-      <p class="modal-value" id="modalContact"></p>
-    </div>
-
-    <!-- ✅ RESUME — RIGHT AFTER CONTACT DETAILS -->
-    <div class="modal-section" id="resumeSection" style="display: none; margin-top: 16px;">
-      <span class="modal-label">Resume</span>
-      <p class="modal-value">
-        <a id="modalResumeLink" target="_blank" href="" class="resume-link">📄 View / Download Resume</a>
-      </p>
-    </div>
-  </div>
-</div>
-
-<script>
-// ✅ Mentor Data — Corrected Google Drive Link
-const mentorData = {
-  mira: {
-    name: "Coach Mira",
-    position: "Founder & Creative Director",
-    avatar: "mira.jpg",
-    summary: "Founder of Queen of Art with years of experience in creative design and freelancing. Passionate about helping beginners turn creative skills into sustainable income.",
-    skills: "Canva Design, Graphic Design, Branding, Freelance Strategy, Client Acquisition",
-    education: "Bachelor of Science in Information Technology - ACLC College of Butuan; Master of Public Administration - Caraga State University",
-    email: "mira@queenofart.com",
-    contact: "+63 977 467 3966",
-    resumeUrl: "https://drive.google.com/file/d/1Thgv-hciXZ-8eTQX3cdCc4-rf6ZgQCAJ/view?usp=sharing"
-  },
-  sarah: {
-    name: "Coach Sarah",
-    position: "Co-Founder, SEO Content & Lead Designer",
-    avatar: "sarah.jpg",
-    summary: "Bridging beautiful design with data-driven SEO strategies to help brands grow and stand out online.",
-    skills: "SEO Content Design, Brand Identity, Social Media Graphics, Digital Marketing, Visual Storytelling",
-    education: "Bachelor of Science in Information Technology",
-    email: "sarah@queenofart.com",
-    contact: "+63 930 761 3364",
-    resumeUrl: ""
-  },
-  zen: {
-    name: "Consultant Zen",
-    position: "Legal Consultant",
-    avatar: "zen.jpg",
-    summary: "Specializes in intellectual property and business law so designers can protect their work and business.",
-    skills: "Copyright Law, Contract Drafting, Licensing, Business Registration, IP Protection",
-    education: "Bachelor of Laws",
-    email: "zen@queenofart.com",
-    contact: "+63 965 783 9098",
-    resumeUrl: ""
-  }
-};
-
-// Modal Elements
-const modal = document.getElementById('hireModal');
-const closeBtn = document.querySelector('.modal-close');
-const hireButtons = document.querySelectorAll('.hire-btn');
-
-// Open Modal
-hireButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.getAttribute('data-mentor');
-    const data = mentorData[id];
-
-    document.getElementById('modalName').textContent = data.name;
-    document.getElementById('modalPosition').textContent = data.position;
-    document.getElementById('modalAvatar').src = data.avatar;
-    document.getElementById('modalAvatar').alt = data.name;
-    document.getElementById('modalSummary').textContent = data.summary;
-    document.getElementById('modalSkills').textContent = data.skills;
-    document.getElementById('modalEducation').textContent = data.education;
-    document.getElementById('modalEmail').textContent = data.email;
-    document.getElementById('modalContact').textContent = data.contact;
-
-    // ✅ Resume Link — Show/Hide
-    if (data.resumeUrl && data.resumeUrl.trim() !== "") {
-      document.getElementById('modalResumeLink').href = data.resumeUrl;
-      document.getElementById('resumeSection').style.display = "block";
-    } else {
-      document.getElementById('resumeSection').style.display = "none";
-    }
-
-    modal.style.display = 'flex';
-  });
-});
-
-// Close Modal — × Button
-closeBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-});
-
-// Close Modal — Click Outside
-window.addEventListener('click', (e) => {
-  if (e.target === modal) {
-    modal.style.display = 'none';
-  }
-});
-
-// ✅ Firebase Auth — NO Storage/DB code here (moved to profile.html)
-const $ = id => document.getElementById(id);
-
-function closeMenu() {
-  $('acctMenu').classList.add('hide');
-  $('acctBtn').setAttribute('aria-expanded', 'false');
-}
-
-$('acctBtn').onclick = e => {
-  e.stopPropagation();
-  const isOpen = $('acctMenu').classList.toggle('hide') === false;
-  $('acctBtn').setAttribute('aria-expanded', isOpen);
-};
-
-document.addEventListener('click', e => {
-  if (!$('acct').contains(e.target)) closeMenu();
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeMenu();
-});
-
-// Logout placeholder — add your code in profile.html if needed
-$('navLogout').onclick = () => {
-  alert('Logout handled in profile.html');
-};
-
-// Render account menu
-function renderNav(user) {
-  $('loginLink').classList.toggle('hide', !!user);
-  $('acct').classList.toggle('hide', !user);
-  closeMenu();
-  if (user) {
-    const meta = user.user_metadata || {};
-    const name = meta.full_name || user.email.split('@')[0];
-    $('avatar').textContent = name.trim().charAt(0).toUpperCase();
-    $('acctName').textContent = name.trim().split(' ')[0];
-    $('menuName').textContent = name;
-    $('menuEmail').textContent = user.email;
-  }
-}
-</script>
-
-<section class="tools" id="tools">
-  <div class="wrap">
-    <h2>Tools you'll master</h2>
-    <p class="lead">Learn the exact apps clients and employers expect you to know. Learn it here, use it everywhere.</p>
-    <div class="chips">
-      <span>Canva</span>
-      <span>Adobe Photoshop</span>
-      <span>Adobe Illustrator</span>
-      <span>Claude</span>
-      <span>Discord</span>
-      <span>Trello</span>
-      <span>VistaSocial</span>
-      <span>Slack</span>
-      <span>Word</span>
-      <span>Excel</span>
-      <span>PDF</span>
-    </div>
-  </div>
-</section>
-
-<section class="contact" id="contact">
-  <div class="wrap">
-    <h2>Ready to start designing?</h2>
-    <p class="lead">Message us to enroll. Register now and get your first certificate free.</p>
-    <a class="btn" href="mailto:mira.graphicsfreelancer@gmail.com?subject=Enroll%20in%20Queen%20of%20Art">Email us to enroll</a>
-    <p style="margin-top: 20px;">Or call <a href="tel:+639774673966">+63 977 467 3966</a></p>
-  </div>
-</section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <div>&copy; 2026 Queen of Art Online Learning Courses</div>
-    <div>
-      <a href="payment.html">Payment Terms</a>
-      <a href="https://www.facebook.com/profile.php?id=61594094747305" target="_blank">Facebook</a>
-      <a href="https://www.instagram.com/queenofartacb" target="_blank">Instagram</a>
-      <a href="https://www.tiktok.com/@disenyocrafts" target="_blank">TikTok</a>
-      <a href="privacy.html">Privacy Policy</a>
-    </div>
-  </div>
-</footer>
-
-<!-- Firebase Auth Only -->
+<!-- Firebase SDKs — keep these 3 lines in this order -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
   authDomain: "queen-of-art.firebaseapp.com",
@@ -543,13 +55,98 @@ const firebaseConfig = {
   messagingSenderId: "681441268668",
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
-firebase.initializeApp(firebaseConfig);
 
-// Auth state listener
-firebase.auth().onAuthStateChanged(user => {
-  renderNav(user);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+
+async function getDisplayName(user) {
+  let displayName = user.displayName;
+
+  // Try email-based doc first (preferred pattern)
+  if (!displayName) {
+    try {
+      const emailDoc = await db.collection("users").doc(user.email.toLowerCase()).get();
+      if (emailDoc.exists && emailDoc.data().fullName) {
+        displayName = emailDoc.data().fullName;
+      }
+    } catch (e) {
+      console.log("Email doc lookup skipped");
+    }
+  }
+
+  // Fallback: try UID-based doc during transition
+  if (!displayName) {
+    try {
+      const uidDoc = await db.collection("users").doc(user.uid).get();
+      if (uidDoc.exists && uidDoc.data().fullName) {
+        displayName = uidDoc.data().fullName;
+      }
+    } catch (e) {
+      console.log("UID doc lookup skipped");
+    }
+  }
+
+  // Final fallback: email prefix
+  if (!displayName) {
+    displayName = user.email.split("@")[0];
+  }
+
+  return displayName;
+}
+
+async function updateUserUI(user) {
+  const nameEl = document.querySelector(".user-name");
+  const emailEl = document.querySelector(".user-email");
+  const avatarEl = document.querySelector(".avatar-letter");
+
+  if (!user) {
+    if (nameEl) nameEl.textContent = "Student login";
+    if (emailEl) emailEl.textContent = "";
+    if (avatarEl) avatarEl.textContent = "S";
+    return;
+  }
+
+  const displayName = await getDisplayName(user);
+
+  if (nameEl) nameEl.textContent = displayName;
+  if (emailEl) emailEl.textContent = user.email;
+  if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+}
+
+async function handleLogout() {
+  try {
+    await firebase.auth().signOut();
+    window.location.href = "index.html";
+  } catch (err) {
+    console.error("Logout error:", err);
+    alert("Logout failed: " + err.message);
+  }
+}
+
+// Dropdown toggle
+const menuToggle = document.getElementById("userMenuToggle");
+const dropdown = document.getElementById("userDropdown");
+if (menuToggle && dropdown) {
+  menuToggle.addEventListener("click", () => {
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  });
+}
+
+// Logout handler — NO ALERTS, direct redirect ✅
+document.addEventListener("click", (e) => {
+  const targetText = e.target.textContent.trim();
+  if (e.target.closest('[data-action="logout"]') || targetText === "Log out") {
+    e.preventDefault();
+    handleLogout();
+  }
+});
+
+// Auth state watcher
+firebase.auth().onAuthStateChanged((user) => {
+  updateUserUI(user);
 });
 </script>
-
 </body>
 </html>
