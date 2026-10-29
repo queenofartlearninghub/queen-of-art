@@ -517,10 +517,14 @@ function renderNav(user) {
   closeMenu();
   if (user) {
     const meta = user.user_metadata || {};
-    const name = meta.full_name || user.email.split('@')[0];
-    $('avatar').textContent = name.trim().charAt(0).toUpperCase();
-    $('acctName').textContent = name.trim().split(' ')[0];
-    $('menuName').textContent = name;
+    // Use full_name if available in profile metadata
+    const displayName = meta.full_name || meta.name || user.displayName || user.email.split('@')[0];
+    const firstOrFullName = displayName.trim().split(' ')[0];
+    
+    // Avatar shows first letter of display name
+    $('avatar').textContent = displayName.trim().charAt(0).toUpperCase();
+    $('acctName').textContent = firstOrFullName;
+    $('menuName').textContent = displayName;
     $('menuEmail').textContent = user.email;
   }
 }
