@@ -8,45 +8,100 @@
 <style>
 :root{--violet:#3B1C78;--dark:#24104D;--lilac:#EEE6FF;--gold:#FFC93C;--rose:#FF5C8A;--ink:#1E1433}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:var(--ink);min-height:100vh}
-/* Add your existing styles here — keep whatever you already have */
-.avatar-letter{background:var(--gold);color:var(--dark);border-radius:50%;width:36px;height:36px;display:grid;place-items:center;font-weight:700}
-.user-name{font-weight:700}
-.user-email{font-size:.85rem;color:#666}
-.hide{display:none}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:var(--ink);line-height:1.5}
+
+/* Navigation — Clean, NO login button ✅ */
+nav{background:#fff;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.brand{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-weight:800;font-size:1.5rem;color:var(--violet);text-decoration:none}
+.user-area{display:flex;align-items:center;gap:12px;position:relative}
+.avatar-letter{background:var(--gold);color:var(--dark);border-radius:50%;width:36px;height:36px;display:grid;place-items:center;font-weight:700;flex-shrink:0}
+.user-info{line-height:1.2}
+.user-name{font-weight:700;font-size:.95rem}
+.user-email{font-size:.8rem;color:#777}
+.menu-btn{background:none;border:none;cursor:pointer;padding:4px 8px;font-size:.8rem;color:var(--violet)}
+.dropdown{position:absolute;right:0;top:100%;margin-top:8px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.15);border-radius:12px;min-width:180px;display:none;overflow:hidden}
+.dropdown a{display:block;padding:12px 18px;text-decoration:none;color:var(--ink)}
+.dropdown a:hover{background:var(--lilac)}
+
+/* Login Selection — Center Screen ✅ */
+.login-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:200;padding:24px}
+.login-card{background:#fff;border-radius:24px;padding:40px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-card h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.8rem;color:var(--violet);margin-bottom:8px}
+.login-card p{color:#666;margin-bottom:32px}
+.role-buttons{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.role-btn{padding:28px 20px;border:2px solid var(--lilac);border-radius:16px;background:#fff;cursor:pointer;transition:.2s;font-size:1.1rem;font-weight:700;color:var(--violet)}
+.role-btn:hover{border-color:var(--gold);background:var(--lilac);transform:translateY(-2px)}
+.role-btn .sub{font-weight:400;font-size:.85rem;color:#777;margin-top:6px}
+.close-btn{margin-top:24px;background:none;border:none;color:#888;cursor:pointer;text-decoration:underline}
+
+/* Your homepage content — fully visible ✅ */
+main{padding:40px 32px}
+
+/* Trigger link to open login — place where you want */
+.open-login-btn{display:inline-block;margin-top:20px;padding:14px 32px;background:var(--gold);color:var(--dark);font-weight:700;border-radius:999px;text-decoration:none;border:none;cursor:pointer;font-size:1rem}
+
+.hide{display:none !important}
 </style>
 </head>
 <body>
 
-<!-- YOUR NAVIGATION / PAGE CONTENT STARTS HERE — keep your existing HTML -->
-<!-- Example navigation structure: -->
-<nav style="background:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
-  <div class="brand" style="font-family:'Bricolage Grotesque';font-weight:800;font-size:1.4rem;color:var(--violet)">Queen of Art</div>
+<!-- Navigation — Only Brand + Logged-in Menu ✅ -->
+<nav>
+  <a href="index.html" class="brand">Queen of Art</a>
   
-  <div style="display:flex;align-items:center;gap:12px">
-    <div class="avatar-letter">A</div>
-    <div>
-      <div class="user-name">Loading…</div>
-      <div class="user-email"></div>
+  <!-- TOP "Student login" BUTTON REMOVED ✅ -->
+  <div class="user-area" id="loggedInArea" style="display:none">
+    <div class="avatar-letter" id="avatarLetter">A</div>
+    <div class="user-info">
+      <div class="user-name" id="userName"></div>
+      <div class="user-email" id="userEmail"></div>
     </div>
-    <div style="position:relative">
-      <button id="userMenuToggle" style="background:none;border:none;cursor:pointer">▼</button>
-      <div id="userDropdown" style="display:none;position:absolute;right:0;top:100%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);border-radius:8px;min-width:160px;z-index:99">
-        <a href="profile.html" style="display:block;padding:10px 14px;text-decoration:none;color:inherit">My Profile</a>
-        <a href="#" data-action="logout" style="display:block;padding:10px 14px;text-decoration:none;color:inherit">Log out</a>
-      </div>
+    <button class="menu-btn" id="menuToggle">▼</button>
+    
+    <div class="dropdown" id="userMenu">
+      <a href="profile.html">My Profile</a>
+      <a href="#" data-action="logout">Log out</a>
     </div>
   </div>
 </nav>
 
-<!-- Your page main content here — keep everything you already have -->
+<!-- ============================================== -->
+<!-- YOUR EXISTING HOMEPAGE CONTENT — EVERYONE SEES IT ✅ -->
+<main>
+  <!-- Paste ALL your original homepage content here -->
+  
+  <!-- Optional: Add login button anywhere on your page -->
+  <!-- <button class="open-login-btn" id="openLoginBtn">Log In / Sign In</button> -->
+</main>
+<!-- ============================================== -->
 
-<!-- Firebase SDKs — keep these 3 lines in this order -->
+<!-- Login Selection — Center Screen ✅ -->
+<div class="login-modal" id="loginModal">
+  <div class="login-card">
+    <h2>Welcome Back</h2>
+    <p>Select your role to continue</p>
+    
+    <div class="role-buttons">
+      <button class="role-btn" id="studentBtn">
+        🎓 Student
+        <div class="sub">Log in to your courses</div>
+      </button>
+      <button class="role-btn" id="adminBtn">
+        👑 Admin
+        <div class="sub">Manage accounts & content</div>
+      </button>
+    </div>
+    
+    <button class="close-btn" id="closeModal">Cancel — continue browsing</button>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  <script>
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
   authDomain: "queen-of-art.firebaseapp.com",
@@ -56,97 +111,90 @@ const firebaseConfig = {
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const ADMIN_EMAIL = "almirabagro12@gmail.com";
 
 async function getDisplayName(user) {
   let displayName = user.displayName;
-
-  // Try email-based doc first (preferred pattern)
   if (!displayName) {
     try {
-      const emailDoc = await db.collection("users").doc(user.email.toLowerCase()).get();
-      if (emailDoc.exists && emailDoc.data().fullName) {
-        displayName = emailDoc.data().fullName;
-      }
-    } catch (e) {
-      console.log("Email doc lookup skipped");
-    }
+      const snap = await db.collection("users").doc(user.email.toLowerCase()).get();
+      if (snap.exists && snap.data().fullName) displayName = snap.data().fullName;
+    } catch (e) {}
   }
-
-  // Fallback: try UID-based doc during transition
   if (!displayName) {
     try {
-      const uidDoc = await db.collection("users").doc(user.uid).get();
-      if (uidDoc.exists && uidDoc.data().fullName) {
-        displayName = uidDoc.data().fullName;
-      }
-    } catch (e) {
-      console.log("UID doc lookup skipped");
-    }
+      const snap = await db.collection("users").doc(user.uid).get();
+      if (snap.exists && snap.data().fullName) displayName = snap.data().fullName;
+    } catch (e) {}
   }
-
-  // Final fallback: email prefix
-  if (!displayName) {
-    displayName = user.email.split("@")[0];
-  }
-
+  if (!displayName) displayName = user.email.split("@")[0];
   return displayName;
 }
 
-async function updateUserUI(user) {
-  const nameEl = document.querySelector(".user-name");
-  const emailEl = document.querySelector(".user-email");
-  const avatarEl = document.querySelector(".avatar-letter");
+async function updateUI(user) {
+  const loggedInArea = document.getElementById("loggedInArea");
+  const avatar = document.getElementById("avatarLetter");
+  const nameEl = document.getElementById("userName");
+  const emailEl = document.getElementById("userEmail");
+  const loginModal = document.getElementById("loginModal");
 
   if (!user) {
-    if (nameEl) nameEl.textContent = "Student login";
-    if (emailEl) emailEl.textContent = "";
-    if (avatarEl) avatarEl.textContent = "S";
+    loggedInArea.style.display = "none";
+    loginModal.style.display = "grid"; // Modal shows by default ✅
     return;
   }
 
+  // Hide modal, show user info when logged in ✅
+  loginModal.style.display = "none";
+  loggedInArea.style.display = "flex";
   const displayName = await getDisplayName(user);
-
-  if (nameEl) nameEl.textContent = displayName;
-  if (emailEl) emailEl.textContent = user.email;
-  if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+  avatar.textContent = displayName.charAt(0).toUpperCase();
+  nameEl.textContent = displayName;
+  emailEl.textContent = user.email;
 }
 
-async function handleLogout() {
+async function handleLogout(e) {
+  e.preventDefault();
   try {
     await firebase.auth().signOut();
     window.location.href = "index.html";
-  } catch (err) {
-    console.error("Logout error:", err);
-    alert("Logout failed: " + err.message);
-  }
+  } catch (err) { console.error(err); }
 }
 
-// Dropdown toggle
-const menuToggle = document.getElementById("userMenuToggle");
-const dropdown = document.getElementById("userDropdown");
-if (menuToggle && dropdown) {
-  menuToggle.addEventListener("click", () => {
-    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-  });
-}
+// Close modal — continue browsing
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("loginModal").style.display = "none";
+});
 
-// Logout handler — NO ALERTS, direct redirect ✅
+// Student → login only
+document.getElementById("studentBtn").addEventListener("click", () => {
+  window.location.href = "register.html?role=student";
+});
+
+// Admin → login + registration
+document.getElementById("adminBtn").addEventListener("click", () => {
+  window.location.href = "register.html?role=admin";
+});
+
+// Menu toggle
+document.getElementById("menuToggle").addEventListener("click", () => {
+  const menu = document.getElementById("userMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+});
 document.addEventListener("click", (e) => {
-  const targetText = e.target.textContent.trim();
-  if (e.target.closest('[data-action="logout"]') || targetText === "Log out") {
-    e.preventDefault();
-    handleLogout();
+  if (!e.target.closest(".user-area")) {
+    document.getElementById("userMenu").style.display = "none";
   }
 });
 
-// Auth state watcher
-firebase.auth().onAuthStateChanged((user) => {
-  updateUserUI(user);
+// Logout
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-action="logout"]')) handleLogout(e);
 });
+
+firebase.auth().onAuthStateChanged(updateUI);
 </script>
 </body>
 </html>
