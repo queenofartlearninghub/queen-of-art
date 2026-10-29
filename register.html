@@ -24,24 +24,24 @@ input:focus{outline:none;border-color:var(--violet)}
 .msg.err{display:block;background:#ffe3ea;color:#8a1236}
 .msg.ok{display:block;background:#e3f7e8;color:#145a2a}
 .link{background:none;border:0;color:var(--violet);font:inherit;text-decoration:underline;cursor:pointer;margin-top:14px}
-.back{display:inline-block;margin-top:18px;color:var(--violet);font-weight:700}
+.back{display:inline-block;margin-top:18px;color:var(--violet);font-weight:700;text-decoration:none}
 .hide{display:none}
 :focus-visible{outline:3px solid var(--rose);outline-offset:2px}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="brand">Queen of Art</div>
-  <p class="sub">Student account for the e-learning hub</p>
+  <a href="index.html" class="brand">Queen of Art</a>
+  <p class="sub" id="pageSub">Sign in to your learning account</p>
 
   <!-- Signed-out view -->
   <div id="auth">
     <div class="tabs" role="tablist">
-      <button role="tab" id="tabReg" aria-selected="true">Register</button>
-      <button role="tab" id="tabLog" aria-selected="false">Log in</button>
+      <button role="tab" id="tabReg" aria-selected="false">Register</button>
+      <button role="tab" id="tabLog" aria-selected="true">Log in</button>
     </div>
 
-    <form id="regForm" novalidate>
+    <form id="regForm" novalidate class="hide">
       <label for="rName">Full name</label>
       <input id="rName" autocomplete="name" required>
       <label for="rEmail">Email</label>
@@ -53,7 +53,7 @@ input:focus{outline:none;border-color:var(--violet)}
       <button class="go" type="submit">Create my account</button>
     </form>
 
-    <form id="logForm" class="hide" novalidate>
+    <form id="logForm" novalidate>
       <label for="lEmail">Email</label>
       <input id="lEmail" type="email" autocomplete="email" required>
       <label for="lPass">Password</label>
@@ -67,12 +67,13 @@ input:focus{outline:none;border-color:var(--violet)}
   <div id="inside" class="hide">
     <h2 id="hello" style="font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px"></h2>
     <p id="verifyNote" style="margin-bottom:16px"></p>
-    <a class="go" href="index.html#courses" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to the courses</a>
+    <a class="go" href="index.html" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to homepage</a>
     <button class="go" id="logout" type="button">Log out</button>
   </div>
 
   <div id="msg" class="msg" role="status" aria-live="polite"></div>
   
+  <a href="index.html" class="back">← Back to homepage</a>
 </div>
 
 <!-- Firebase -->
@@ -98,6 +99,11 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
+// ✅ Admin-only registration
+const ADMIN_EMAIL = "almirabagro12@gmail.com";
+const urlParams = new URLSearchParams(window.location.search);
+const role = urlParams.get('role') || 'student';
+
 function friendly(e){
   const c = e.code || '';
   if (c.includes('email-already-in-use')) return 'This email already has an account. Try logging in.';
@@ -116,15 +122,41 @@ function show(tab){
   $('tabLog').setAttribute('aria-selected', !reg);
   clear();
 }
-$('tabReg').onclick = () => show('reg');
+
+// Initialize based on role from index.html
+window.addEventListener('DOMContentLoaded', () => {
+  if (role === 'admin') {
+    $('pageSub').textContent = 'Admin — create or manage accounts';
+    show('reg'); // Admin sees registration form first
+  } else {
+    $('pageSub').textContent = 'Sign in to your learning account';
+    show('log'); // Students see login first
+    $('tabReg').style.pointerEvents = 'none'; // Hide registration tab for students
+    $('tabReg').style.opacity = '0.5';
+  }
+});
+
+$('tabReg').onclick = () => {
+  if (role === 'admin') show('reg');
+  else msg('Registration is by invitation only. Please log in or contact the Admin.');
+};
 $('tabLog').onclick = () => show('log');
 
-// ✅ FIXED REGISTRATION — Email as Document ID + No Duplicates
+// ✅ PROTECTED Registration — Only Admin email allowed
 $('regForm').onsubmit = async e => {
   e.preventDefault(); clear();
+  
   const name = $('rName').value.trim();
-  const email = $('rEmail').value.trim().toLowerCase(); // ✅ Always lowercase
+  const email = $('rEmail').value.trim().toLowerCase();
   const p1 = $('rPass').value, p2 = $('rPass2').value;
+
+  // Block non-admin registration
+  if (role !== 'admin' && email !== ADMIN_EMAIL) {
+    return msg('Registration is by invitation only. Contact the Admin for access.');
+  }
+  if (email !== ADMIN_EMAIL) {
+    return msg('Only the designated Admin account can register new accounts.');
+  }
   
   if (!name) return msg('Enter your full name.');
   if (p1.length < 8) return msg('Choose a password with at least 8 characters.');
@@ -132,17 +164,15 @@ $('regForm').onsubmit = async e => {
   
   const btn = e.submitter; btn.disabled = true;
   try {
-    // 1. Create Auth user
     const cred = await auth.createUserWithEmailAndPassword(email, p1);
     await cred.user.updateProfile({ displayName: name });
     await cred.user.sendEmailVerification();
     
-    // 2. Create Firestore doc — EMAIL as ID, NOT UID ✅
+    // Create Firestore doc — email as ID ✅
     const userRef = db.collection("users").doc(email);
     const existing = await userRef.get();
     
     if (!existing.exists) {
-      // Only create if doesn't exist — prevents duplicates ✅
       await userRef.set({
         fullName: name,
         email: email,
@@ -151,7 +181,7 @@ $('regForm').onsubmit = async e => {
       });
     }
     
-    msg('Account created. We sent a verification link to your email.', true);
+    msg('Account created. Verification link sent to your email.', true);
   } catch (err) { 
     console.error(err);
     msg(friendly(err)); 
@@ -178,7 +208,7 @@ $('forgot').onclick = async () => {
   } catch (err) { msg(friendly(err)); }
 };
 
-// ✅ FIXED LOGOUT — Auto-redirect to homepage
+// ✅ Fixed Logout — no message, direct redirect
 $('logout').onclick = async () => {
   try {
     await auth.signOut();
