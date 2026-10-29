@@ -66,19 +66,20 @@ input:focus{outline:none;border-color:var(--violet)}
   <!-- Signed-in view -->
   <div id="inside" class="hide">
     <h2 id="hello" style="font-family:'Bricolage Grotesque',sans-serif;margin-bottom:8px"></h2>
-   <p id="verifyNote" style="margin-bottom:16px"></p>
-<a class="go" href="index.html#courses" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to the courses</a>
-<button class="go" id="logout" type="button">Log out</button>
+    <p id="verifyNote" style="margin-bottom:16px"></p>
+    <a class="go" href="index.html#courses" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px">Go to the courses</a>
+    <button class="go" id="logout" type="button">Log out</button>
   </div>
 
   <div id="msg" class="msg" role="status" aria-live="polite"></div>
   
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// 1) Paste YOUR Firebase web app settings here (Firebase console > Project settings > Your apps).
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
   authDomain: "queen-of-art.firebaseapp.com",
@@ -87,15 +88,15 @@ const firebaseConfig = {
   messagingSenderId: "681441268668",
   appId: "1:681441268668:web:ef7e01b245bb96995291b9"
 };
+
 const $ = id => document.getElementById(id);
 const msg = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
 const clear = () => { $('msg').className = 'msg'; };
 
-const configured = !firebaseConfig.apiKey.startsWith('PASTE');
-if (!configured) msg('Setup needed: add your Firebase settings in register.html before accounts can be created.');
-else firebase.initializeApp(firebaseConfig);
-const auth = configured ? firebase.auth() : null;
-  if (auth) auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 
 function friendly(e){
   const c = e.code || '';
@@ -118,30 +119,52 @@ function show(tab){
 $('tabReg').onclick = () => show('reg');
 $('tabLog').onclick = () => show('log');
 
+// ✅ FIXED REGISTRATION — Email as Document ID + No Duplicates
 $('regForm').onsubmit = async e => {
   e.preventDefault(); clear();
-  if (!auth) return msg('Setup needed: add your Firebase settings first.');
-  const name = $('rName').value.trim(), email = $('rEmail').value.trim();
+  const name = $('rName').value.trim();
+  const email = $('rEmail').value.trim().toLowerCase(); // ✅ Always lowercase
   const p1 = $('rPass').value, p2 = $('rPass2').value;
+  
   if (!name) return msg('Enter your full name.');
   if (p1.length < 8) return msg('Choose a password with at least 8 characters.');
   if (p1 !== p2) return msg('The two passwords do not match.');
+  
   const btn = e.submitter; btn.disabled = true;
   try {
+    // 1. Create Auth user
     const cred = await auth.createUserWithEmailAndPassword(email, p1);
     await cred.user.updateProfile({ displayName: name });
     await cred.user.sendEmailVerification();
+    
+    // 2. Create Firestore doc — EMAIL as ID, NOT UID ✅
+    const userRef = db.collection("users").doc(email);
+    const existing = await userRef.get();
+    
+    if (!existing.exists) {
+      // Only create if doesn't exist — prevents duplicates ✅
+      await userRef.set({
+        fullName: name,
+        email: email,
+        payment: "Pending",
+        courses: []
+      });
+    }
+    
     msg('Account created. We sent a verification link to your email.', true);
-  } catch (err) { msg(friendly(err)); }
+  } catch (err) { 
+    console.error(err);
+    msg(friendly(err)); 
+  }
   btn.disabled = false;
 };
 
 $('logForm').onsubmit = async e => {
   e.preventDefault(); clear();
-  if (!auth) return msg('Setup needed: add your Firebase settings first.');
   const btn = e.submitter; btn.disabled = true;
-  try { await auth.signInWithEmailAndPassword($('lEmail').value.trim(), $('lPass').value); }
-  catch (err) { msg(friendly(err)); }
+  try { 
+    await auth.signInWithEmailAndPassword($('lEmail').value.trim(), $('lPass').value); 
+  } catch (err) { msg(friendly(err)); }
   btn.disabled = false;
 };
 
@@ -149,17 +172,27 @@ $('forgot').onclick = async () => {
   clear();
   const email = $('lEmail').value.trim();
   if (!email) return msg('Type your email above, then select Reset my password.');
-  try { await auth.sendPasswordResetEmail(email); msg('Password reset link sent. Check your inbox.', true); }
-  catch (err) { msg(friendly(err)); }
+  try { 
+    await auth.sendPasswordResetEmail(email); 
+    msg('Password reset link sent. Check your inbox.', true); 
+  } catch (err) { msg(friendly(err)); }
 };
 
-$('logout').onclick = () => auth && auth.signOut();
+// ✅ FIXED LOGOUT — Auto-redirect to homepage
+$('logout').onclick = async () => {
+  try {
+    await auth.signOut();
+    window.location.href = "index.html";
+  } catch (err) {
+    console.error("Logout error:", err);
+  }
+};
 
-if (auth) auth.onAuthStateChanged(u => {
+auth.onAuthStateChanged(u => {
   $('auth').classList.toggle('hide', !!u);
   $('inside').classList.toggle('hide', !u);
   if (u) {
-    $('hello').textContent = 'Welcome, ' + (u.displayName || 'student');
+    $('hello').textContent = 'Welcome, ' + (u.displayName || u.email.split('@')[0]);
     $('verifyNote').textContent = u.emailVerified
       ? 'Your email is verified.'
       : 'Check your email and select the verification link to finish setting up.';
