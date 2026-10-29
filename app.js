@@ -78,7 +78,7 @@ function renderTopbar() {
       <a href="index.html#tools">Tools</a>
       <a href="index.html#contact">Contact</a>
       <a href="courses.html">Learning hub</a>
-      <a href="admin.html" id="navAdmin" class="hide" style="font-weight:bold;color:var(--marigold)">Admin</a>
+      <a href="admin-dashboard.html" id="navAdmin" class="hide" style="font-weight:bold;color:var(--marigold)">Admin</a>
       <a href="login.html" id="navLogin" class="nav-login hide">Log in</a>
       <div class="acct hide" id="acct">
         <button type="button" id="acctBtn" aria-expanded="false" aria-haspopup="true">
