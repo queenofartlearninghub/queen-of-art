@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in | Queen of Art</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--violet:#3B1C78;--dark:#24104D;--lilac:#EEE6FF;--gold:#FFC93C;--rose:#FF5C8A;--ink:#1E1433}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--violet);color:var(--ink);line-height:1.55;min-height:100vh;padding:24px}
+.top{max-width:460px;margin:0 auto 18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-weight:800;font-size:1.8rem;letter-spacing:-.02em;color:#fff;text-decoration:none}
+.card{max-width:460px;margin:0 auto;background:#fff;border-radius:26px;padding:34px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+h1{font-family:'Bricolage Grotesque','Trebuchet MS',sans-serif;font-size:1.8rem;letter-spacing:-.02em;color:var(--violet);margin-bottom:6px}
+.sub{color:#6a5a8c;font-size:.93rem;margin-bottom:18px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tabs button{flex:1;padding:10px;border-radius:999px;border:2px solid var(--violet);background:#fff;color:var(--violet);font:inherit;font-weight:700;cursor:pointer}
+.tabs button.on{background:var(--violet);color:#fff}
+label{display:block;font-weight:700;font-size:.92rem;margin:12px 0 5px}
+input{width:100%;padding:12px 14px;border:2px solid #d7cdef;border-radius:12px;font:inherit}
+input:focus{outline:none;border-color:var(--violet)}
+.btn{display:block;width:100%;margin-top:18px;padding:12px 20px;border-radius:999px;border:0;background:var(--gold);color:var(--dark);font:inherit;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.link{background:none;border:0;color:var(--violet);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0}
+.msg{margin-top:16px;padding:12px 14px;border-radius:12px;font-size:.93rem;display:none}
+.msg.err{display:block;background:#ffe3ea;color:#8a1236}
+.msg.ok{display:block;background:#e3f7e8;color:#145a2a}
+.hide{display:none}
+:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div class="top"><a class="brand" href="index.html">Queen of Art</a></div>
+
+<main class="card">
+  <h1 id="title">Log in</h1>
+  <p class="sub" id="sub">Welcome back. Log in to open your courses.</p>
+
+  <div class="tabs">
+    <button type="button" class="on" id="tabIn">Log in</button>
+    <button type="button" id="tabUp">Create account</button>
+  </div>
+
+  <div id="nameRow" class="hide">
+    <label for="fullName">Full name</label>
+    <input id="fullName" type="text" autocomplete="name" maxlength="80">
+  </div>
+
+  <label for="email">Email</label>
+  <input id="email" type="email" autocomplete="username">
+
+  <label for="pass">Password</label>
+  <input id="pass" type="password" autocomplete="current-password">
+
+  <button class="btn" type="button" id="go">Log in</button>
+  <button class="link" type="button" id="forgot">Forgot your password?</button>
+
+  <div id="msg" class="msg" role="status" aria-live="polite"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
+  authDomain: "queen-of-art.firebaseapp.com",
+  projectId: "queen-of-art",
+  storageBucket: "queen-of-art.firebasestorage.app",
+  messagingSenderId: "681441268668",
+  appId: "1:681441268668:web:ef7e01b245bb96995291b9"
+});
+const auth = firebase.auth();
+const $ = id => document.getElementById(id);
+const say = (t, ok) => { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ok ? 'ok' : 'err'); };
+
+// Only allow a simple page name like profile.html or course.html?id=abc
+const params = new URLSearchParams(location.search);
+let next = params.get('next') || 'profile.html';
+if (!/^[A-Za-z0-9._-]+(\?[^#\s]*)?$/.test(next)) next = 'profile.html';
+
+let mode = 'in';
+function setMode(m) {
+  mode = m;
+  $('tabIn').classList.toggle('on', m === 'in');
+  $('tabUp').classList.toggle('on', m === 'up');
+  $('nameRow').classList.toggle('hide', m !== 'up');
+  $('title').textContent = m === 'in' ? 'Log in' : 'Create your account';
+  $('sub').textContent = m === 'in' ? 'Welcome back. Log in to open your courses.' : 'Register with your email and a password (at least 6 characters).';
+  $('go').textContent = m === 'in' ? 'Log in' : 'Create account';
+  $('pass').autocomplete = m === 'in' ? 'current-password' : 'new-password';
+  $('forgot').classList.toggle('hide', m !== 'in');
+  $('msg').className = 'msg';
+}
+$('tabIn').onclick = () => setMode('in');
+$('tabUp').onclick = () => setMode('up');
+
+const explain = e => ({
+  'auth/invalid-credential': 'Wrong email or password. If you registered on the old site, create your account again with the same email.',
+  'auth/wrong-password': 'Wrong email or password.',
+  'auth/user-not-found': 'No account with that email. Click Create account.',
+  'auth/email-already-in-use': 'That email already has an account. Log in instead.',
+  'auth/weak-password': 'Choose a password with at least 6 characters.',
+  'auth/invalid-email': 'That email address does not look right.',
+  'auth/too-many-requests': 'Too many tries. Wait a few minutes and try again.',
+  'auth/network-request-failed': 'No internet connection. Try again.'
+})[e && e.code] || ('Something went wrong' + (e && e.code ? ' (' + e.code + ')' : '') + '. Try again.');
+
+async function submit() {
+  const email = $('email').value.trim(), pass = $('pass').value;
+  if (!email || !pass) return say('Enter your email and password.');
+  const name = $('fullName').value.trim();
+  if (mode === 'up' && !name) return say('Enter your full name.');
+  $('go').disabled = true;
+  try {
+    if (mode === 'in') {
+      await auth.signInWithEmailAndPassword(email, pass);
+    } else {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      await cred.user.updateProfile({ displayName: name });
+    }
+    location.href = next;
+  } catch (e) {
+    say(explain(e));
+    $('go').disabled = false;
+  }
+}
+$('go').onclick = submit;
+$('pass').onkeydown = e => { if (e.key === 'Enter') submit(); };
+
+$('forgot').onclick = async () => {
+  const email = $('email').value.trim();
+  if (!email) return say('Type your email above first, then click this again.');
+  try {
+    await auth.sendPasswordResetEmail(email);
+    say('Password reset email sent. Check your inbox and spam folder.', true);
+  } catch (e) { say(explain(e)); }
+};
+
+// Already logged in? Go straight on.
+auth.onAuthStateChanged(u => { if (u && !$('go').disabled) location.href = next; });
+</script>
+</body>
+</html>
