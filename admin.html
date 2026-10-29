@@ -9,6 +9,18 @@
   href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap"
   rel="stylesheet">
 <link rel="stylesheet" href="app.css">
+<style>
+/* Account button and dropdown in the top bar */
+.hide{display:none!important}
+.acct{position:relative;display:inline-block}
+#acctBtn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 14px 4px 4px;font:inherit;font-weight:600;cursor:pointer}
+#acctBtn .av{width:30px;height:30px;border-radius:50%;background:var(--marigold,#f5b800);color:#2a1157;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.acct .menu{position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:#fff;color:#1b1030;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.25);padding:8px;z-index:50;text-align:left}
+.acct .menu .who{display:flex;flex-direction:column;padding:8px 10px;border-bottom:1px solid #eee;margin-bottom:6px}
+.acct .menu .who span{font-size:.85rem;color:#666;word-break:break-all}
+.acct .menu a,.acct .menu button{display:block;width:100%;text-align:left;padding:8px 10px;border:0;background:none;color:#1b1030;font:inherit;border-radius:8px;cursor:pointer;text-decoration:none}
+.acct .menu a:hover,.acct .menu button:hover{background:#f0e9ff}
+</style>
 </head>
 <body>
 <header id="top"></header>
