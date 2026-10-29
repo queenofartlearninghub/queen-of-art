@@ -586,8 +586,8 @@ window.addEventListener('click', (e) => {
   </div>
 </footer>
 
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBRdhNInntNmDUKyGCsSNNKbdYmIWyh5ts",
@@ -620,7 +620,7 @@ document.addEventListener('keydown', e => {
 });
 
 $('navLogout').onclick = () => {
-  window.netlifyIdentity?.logout();
+  
 };
 
 function renderNav(user) {
@@ -637,14 +637,7 @@ function renderNav(user) {
   }
 }
 
-if (window.netlifyIdentity) {
-  window.netlifyIdentity.on("init", user => renderNav(user));
-  window.netlifyIdentity.on("login", user => {
-    renderNav(user);
-    window.netlifyIdentity.close();
-  });
-  window.netlifyIdentity.on("logout", () => renderNav(null));
-}
+
 </script>
 </body>
 </html>
