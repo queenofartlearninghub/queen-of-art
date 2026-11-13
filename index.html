@@ -462,6 +462,7 @@ nav{flex-wrap:wrap;margin-left:0;width:100%;justify-content:center;margin-top:10
     <div class="modal-section" id="experienceSection"><span class="modal-label">Experience</span><p class="modal-value" id="modalExperience"></p></div>
     <div class="modal-section"><span class="modal-label">Email</span><p class="modal-value" id="modalEmail"></p></div>
     <div class="modal-section"><span class="modal-label">Contact Details</span><p class="modal-value" id="modalContact"></p></div>
+    <div class="modal-section"><span class="modal-label">Portfolio</span><p class="modal-value" id="modalPortfolio"></p></div>
     <div class="modal-section" id="resumeSection" style="display:none;margin-top:16px">
       <span class="modal-label">Resume</span>
       <p class="modal-value"><a id="modalResumeLink" target="_blank" rel="noopener" href="" class="resume-link">📄 View / Download Resume</a></p>
@@ -531,8 +532,8 @@ const mentorData = {
     education: "Bachelor of Science in Information Technology - ACLC College of Butuan; Master of Public Administration - Caraga State University",
     email: "mira.graphicsfreelancer@gmail.com",
     contact: "+63 977 467 3966",
-    resumeUrl: "https://drive.google.com/file/d/1Thgv-hciXZ-8eTQX3cdCc4-rf6ZgQCAJ/view?usp=sharing",
-    portfolio: "https://almirabagro-portfolio.netlify.app/"
+    portfolio: "https://almirabagro-portfolio.netlify.app/",
+    resumeUrl: "https://drive.google.com/file/d/1Thgv-hciXZ-8eTQX3cdCc4-rf6ZgQCAJ/view?usp=sharing"   
   },
   sarah: {
     name: "Coach Sarah",
@@ -578,6 +579,7 @@ document.querySelectorAll('.hire-btn').forEach(btn => {
     $('experienceSection').style.display = d.experience ? 'block' : 'none';
     $('modalEmail').textContent = d.email;
     $('modalContact').textContent = d.contact;
+    $('modalPortfolio').textContent = d.portfolio;
     if (d.resumeUrl && d.resumeUrl.trim() !== "") {
       $('modalResumeLink').href = d.resumeUrl;
       $('resumeSection').style.display = "block";
