@@ -104,14 +104,19 @@ nav a:hover{color:var(--marigold)}
 
 .mentors-section{padding:60px 20px;max-width:1200px;margin:0 auto}
 .mentors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px;margin-top:40px}
-.mentor-card{text-align:center;padding:30px 20px;border-radius:16px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.06);transition:transform .3s ease}
+.mentor-card{text-align:center;padding:30px 20px;border-radius:16px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.06);transition:transform .3s ease}
 .mentor-card:hover{transform:translateY(-5px)}
 .mentor-avatar{width:120px;height:120px;border-radius:50%;object-fit:cover;margin-bottom:20px;border:3px solid #f0f0f0}
 .mentor-name{font-size:1.25rem;font-weight:700;margin:0 0 6px;color:#1a1a2e}
 .mentor-position{font-size:.95rem;color:#666;margin-bottom:15px}
 .mentor-bio{font-size:.9rem;line-height:1.6;color:#444;margin-bottom:20px}
-.hire-btn{font-family:var(--body);padding:13px 100px;border-radius:999px;background:var(--violet);font-weight:700;color:#fff;border:2px solid var(--violet);cursor:pointer;transition:background .3s ease}
+.mentor-tags{font-size:.82rem;color:#6a5a8c;font-weight:500;margin:-8px 0 18px}
+.mentor-actions{display:flex;flex-direction:column;align-items:center;gap:10px}
+.hire-btn,.mentor-btn{font-family:var(--body);width:100%;max-width:260px;padding:13px 24px;border-radius:999px;font-weight:700;text-align:center;cursor:pointer;transition:background .3s ease,color .3s ease}
+.hire-btn{background:var(--violet);color:#fff;border:2px solid var(--violet)}
 .hire-btn:hover{background:var(--violet-dark);border-color:var(--violet-dark)}
+.mentor-btn{background:transparent;color:var(--violet);border:2px solid var(--violet)}
+.mentor-btn:hover{background:var(--lilac)}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .modal-content{background:#fff;border-radius:16px;max-width:550px;width:100%;padding:30px;position:relative;max-height:90vh;overflow-y:auto}
@@ -410,23 +415,36 @@ nav{flex-wrap:wrap;margin-left:0;width:100%;justify-content:center;margin-top:10
       <div class="mentor-card">
         <img src="mira.jpg" alt="Coach Mira" class="mentor-avatar">
         <h3 class="mentor-name">Coach Mira</h3>
-        <p class="mentor-position">Founder & Creative Director</p>
-        <p class="mentor-bio">Hands-on design & freelance strategies.</p>
-        <button class="hire-btn" data-mentor="mira">Hire Me</button>
+        <p class="mentor-position">Founder &amp; Creative Director</p>
+        <p class="mentor-bio">10+ years in graphic design, executive assistance, and bookkeeping. Teaches Canva, design, and VA skills, and takes freelance projects.</p>
+        <p class="mentor-tags">Canva · Branding · Virtual Assistant · Bookkeeping</p>
+        <div class="mentor-actions">
+          <button class="hire-btn" data-mentor="mira">Hire for a Project</button>
+          <a class="mentor-btn" href="mailto:mira.graphicsfreelancer@gmail.com?subject=Mentoring%20with%20Coach%20Mira">Book Mentoring</a>
+        </div>
       </div>
+
       <div class="mentor-card">
         <img src="sarah.jpg" alt="Coach Sarah" class="mentor-avatar">
         <h3 class="mentor-name">Coach Sarah</h3>
-        <p class="mentor-position">Co-Founder, SEO & Lead Design</p>
-        <p class="mentor-bio">SEO + design = growth.</p>
-        <button class="hire-btn" data-mentor="sarah">Hire Me</button>
+        <p class="mentor-position">Co-Founder, SEO &amp; Lead Design</p>
+        <p class="mentor-bio">Combines design with SEO so brands get found online. Teaches content design, social media graphics, and digital marketing basics.</p>
+        <p class="mentor-tags">SEO Content · Brand Identity · Social Media · Digital Marketing</p>
+        <div class="mentor-actions">
+          <button class="hire-btn" data-mentor="sarah">Hire for a Project</button>
+          <a class="mentor-btn" href="mailto:mira.graphicsfreelancer@gmail.com?subject=Mentoring%20with%20Coach%20Sarah">Book Mentoring</a>
+        </div>
       </div>
+
       <div class="mentor-card">
         <img src="zen.jpg" alt="Consultant Zen" class="mentor-avatar">
         <h3 class="mentor-name">Consultant Zen</h3>
         <p class="mentor-position">Legal Consultant</p>
-        <p class="mentor-bio">Copyright, contracts & business law.</p>
-        <button class="hire-btn" data-mentor="zen">Hire Me</button>
+        <p class="mentor-bio">Helps creatives protect their work and run their business: copyright, contracts, licensing, and business registration.</p>
+        <p class="mentor-tags">Copyright · Contracts · Licensing · Business Registration</p>
+        <div class="mentor-actions">
+          <button class="hire-btn" data-mentor="zen">Book Consultation</button>
+        </div>
       </div>
     </div>
   </div>
@@ -441,6 +459,7 @@ nav{flex-wrap:wrap;margin-left:0;width:100%;justify-content:center;margin-top:10
     <div class="modal-section"><span class="modal-label">Summary</span><p class="modal-value" id="modalSummary"></p></div>
     <div class="modal-section"><span class="modal-label">Core Competences</span><p class="modal-value" id="modalSkills"></p></div>
     <div class="modal-section"><span class="modal-label">Education</span><p class="modal-value" id="modalEducation"></p></div>
+    <div class="modal-section" id="experienceSection"><span class="modal-label">Experience</span><p class="modal-value" id="modalExperience"></p></div>
     <div class="modal-section"><span class="modal-label">Email</span><p class="modal-value" id="modalEmail"></p></div>
     <div class="modal-section"><span class="modal-label">Contact Details</span><p class="modal-value" id="modalContact"></p></div>
     <div class="modal-section" id="resumeSection" style="display:none;margin-top:16px">
@@ -507,8 +526,8 @@ const mentorData = {
     name: "Coach Mira",
     position: "Founder & Creative Director",
     avatar: "mira.jpg",
-    summary: "Founder of Queen of Art with years of experience in creative design and freelancing. Passionate about helping beginners turn creative skills into sustainable income.",
-    skills: "Canva Design, Graphic Design, Branding, Freelance Strategy, Client Acquisition",
+    summary: "Founder of Queen of Art with years of experience in creative design, executive assistance, and freelancing. Passionate about helping beginners turn skills into sustainable income.",
+    skills: "Canva Design, Graphic Design, Branding, Executive Assistance, Document Control, Bookkeeping, Freelance Strategy, Client Acquisition",
     education: "Bachelor of Science in Information Technology - ACLC College of Butuan; Master of Public Administration - Caraga State University",
     email: "mira.graphicsfreelancer@gmail.com",
     contact: "+63 977 467 3966",
@@ -518,10 +537,11 @@ const mentorData = {
     name: "Coach Sarah",
     position: "Co-Founder, SEO Content & Lead Designer",
     avatar: "sarah.jpg",
-    summary: "Bridging beautiful design with data-driven SEO strategies to help brands grow and stand out online.",
+    summary: "Bridges beautiful design with data-driven SEO so brands can grow and stand out online. Teaches students how to create content that looks good and ranks well.",
+    experience: "",
     skills: "SEO Content Design, Brand Identity, Social Media Graphics, Digital Marketing, Visual Storytelling",
     education: "Bachelor of Science in Information Technology",
-    email: "mira.graphicsfreelancer@gmail.com",
+    email: "tinariego09@gmail.com",
     contact: "+63 930 761 3364",
     resumeUrl: ""
   },
@@ -529,14 +549,16 @@ const mentorData = {
     name: "Consultant Zen",
     position: "Legal Consultant",
     avatar: "zen.jpg",
-    summary: "Specializes in intellectual property and business law so designers can protect their work and business.",
+    summary: "Specializes in intellectual property and business law so designers and small businesses can protect their work. Consultations give general guidance and do not replace formal legal representation.",
+    experience: "",
     skills: "Copyright Law, Contract Drafting, Licensing, Business Registration, IP Protection",
     education: "Bachelor of Laws",
-    email: "mira.graphicsfreelancer@gmail.com",
+    email: "zen",
     contact: "+63 965 783 9098",
     resumeUrl: ""
   }
 };
+
 const $ = id => document.getElementById(id);
 const modal = $('hireModal');
 
@@ -551,6 +573,8 @@ document.querySelectorAll('.hire-btn').forEach(btn => {
     $('modalSummary').textContent = d.summary;
     $('modalSkills').textContent = d.skills;
     $('modalEducation').textContent = d.education;
+    $('modalExperience').textContent = d.experience || '';
+    $('experienceSection').style.display = d.experience ? 'block' : 'none';
     $('modalEmail').textContent = d.email;
     $('modalContact').textContent = d.contact;
     if (d.resumeUrl && d.resumeUrl.trim() !== "") {
